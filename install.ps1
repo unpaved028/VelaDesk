@@ -3,7 +3,7 @@
 VelaDesk - Windows Server/Desktop Install Script
 .DESCRIPTION
 Installs VelaDesk on Windows via Docker. 
-Usage: irm https://raw.githubusercontent.com/rene-jung/VelaDesk/main/install.ps1 | iex
+Usage: irm https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.ps1 | iex
 #>
 
 Write-Host "=====================================================" -ForegroundColor Cyan
@@ -18,7 +18,7 @@ if (-not $isAdmin) {
 }
 
 $InstallDir = "C:\VelaDesk"
-$RepoRawUrl = "https://raw.githubusercontent.com/rene-jung/VelaDesk/main"
+$RepoRawUrl = "https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master"
 
 # 2. Check Docker
 Write-Host "[+] Checking for Docker..."

@@ -12,6 +12,16 @@ curl -fsSL https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/mast
 
 Die App ist anschließend unter `http://<IP-Adresse>:3000` erreichbar. Die Konfiguration landet unter `/opt/VelaDesk/`.
 
+## Schnellinstallation (Windows Server / Desktop)
+
+Führe PowerShell als **Administrator** aus und wende diesen Befehl an:
+
+```powershell
+irm https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.ps1 | iex
+```
+
+Die App ist anschließend unter `http://localhost:3000` erreichbar. Die Konfiguration landet unter `C:\VelaDesk\`.
+
 ---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

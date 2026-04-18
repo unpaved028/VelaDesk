@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const REPO_OWNER = 'rene-jung';
+const REPO_OWNER = 'unpaved028';
 const REPO_NAME = 'VelaDesk';
 
 export interface UpdateStatus {
