@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Shield, Network, Globe, Lock, ExternalLink, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { saveCloudflareToken, getCloudflareTokenStatus } from '@/lib/actions/networkActions';

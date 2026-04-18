@@ -12,8 +12,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Prisma Client generieren
 RUN npx prisma generate
-# Next.js Build (Telemetry deaktiviert für Privacy)
+# Umgebungsvariablen für den Build (verhindert Abstürze wegen fehlender Secrets)
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV DATABASE_URL="file:./dev.db"
+ENV VELADESK_MASTER_KEY="build_time_placeholder_secret_32_chars"
+# Der eigentliche Build
 RUN npm run build
 
 # Stage 3: Runner

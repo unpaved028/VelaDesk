@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Database, Cloud, Clock, ShieldCheck, Save, RefreshCw, HardDrive, Mail } from 'lucide-react';
-import { saveBackupConfig } from '../../../lib/actions/systemConfig';
+import { saveBackupConfig } from '@/lib/actions/systemConfig';
 
 interface BackupConfigFormProps {
   initialData: {

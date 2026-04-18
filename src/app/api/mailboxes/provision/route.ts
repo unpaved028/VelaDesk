@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         {
           success: false,
           data: null,
-          error: validation.error.errors[0]?.message || 'Invalid parameters',
+          error: validation.error.issues[0]?.message || 'Invalid parameters',
         },
         { status: 400 }
       );

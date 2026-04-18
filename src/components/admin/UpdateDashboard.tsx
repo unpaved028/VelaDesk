@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCcw, Download, CheckCircle, AlertTriangle, ShieldCheck, Rocket } from 'lucide-react';
-import { checkUpdatesAction, triggerAppUpdate } from '../../../lib/actions/updateActions';
+import { checkUpdatesAction, triggerAppUpdate } from '@/lib/actions/updateActions';
 
 export const UpdateDashboard = () => {
   const [isUpdating, setIsUpdating] = useState(false);

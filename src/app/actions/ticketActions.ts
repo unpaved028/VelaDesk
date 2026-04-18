@@ -11,7 +11,7 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
     const validation = SubmitReplySchema.safeParse({ ticketId, body, type });
     
     if (!validation.success) {
-      return createErrorResponse(validation.error.errors[0]?.message || 'Invalid input');
+      return createErrorResponse(validation.error.issues[0]?.message || 'Invalid input');
     }
 
     const { ticketId: validatedId, body: validatedBody, type: validatedType } = validation.data;
@@ -136,7 +136,7 @@ export async function updateTicketStatus(ticketId: number, status: 'OPEN' | 'RES
     const validation = UpdateStatusSchema.safeParse({ ticketId, status });
     
     if (!validation.success) {
-      return createErrorResponse(validation.error.errors[0]?.message || 'Invalid status update');
+      return createErrorResponse(validation.error.issues[0]?.message || 'Invalid status update');
     }
 
     const firstTenant = await prisma.tenant.findFirst();

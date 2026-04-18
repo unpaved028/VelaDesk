@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     
     if (!validation.success) {
       return NextResponse.json<ApiResponse<null>>(
-        createErrorResponse(validation.error.errors[0]?.message || 'Invalid parameters'),
+        createErrorResponse(validation.error.issues[0]?.message || 'Invalid parameters'),
         { status: 400 }
       );
     }
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     let statusCode = 500;
 
     if (error instanceof ZodError) {
-      errorMessage = error.errors[0]?.message || 'Validation Error';
+      errorMessage = error.issues[0]?.message || 'Validation Error';
       statusCode = 400;
     } else if (error instanceof Error) {
       errorMessage = error.message;

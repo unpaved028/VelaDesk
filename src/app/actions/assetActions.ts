@@ -18,7 +18,7 @@ export async function createAsset(data: unknown) {
 
     const validation = CreateAssetSchema.safeParse(data);
     if (!validation.success) {
-      return createErrorResponse(validation.error.errors[0]?.message || 'Invalid input parameter');
+      return createErrorResponse(validation.error.issues[0]?.message || 'Invalid input parameter');
     }
 
     const assetData = validation.data;
@@ -69,7 +69,7 @@ export async function updateAsset(data: unknown) {
 
     const validation = UpdateAssetSchema.safeParse(data);
     if (!validation.success) {
-      return createErrorResponse(validation.error.errors[0]?.message || 'Invalid input parameter');
+      return createErrorResponse(validation.error.issues[0]?.message || 'Invalid input parameter');
     }
 
     const { id, ...updateData } = validation.data;
