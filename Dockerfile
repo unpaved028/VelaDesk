@@ -8,16 +8,22 @@ RUN npm ci
 # Stage 2: Builder
 FROM node:22-alpine AS builder
 WORKDIR /app
+
+# WICHTIG: Erst Abhängigkeiten kopieren
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Prisma Client generieren
-RUN npx prisma generate
-# Umgebungsvariablen für den Build (verhindert Abstürze wegen fehlender Secrets)
+
+# Umgebungsvariablen für den Build (verhindert Abstürze)
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV DATABASE_URL="file:./dev.db"
-ENV VELADESK_MASTER_KEY="build_time_placeholder_secret_32_chars"
-# Der eigentliche Build
-RUN npm run build
+ENV NODE_ENV production
+ENV DATABASE_URL="file:./prisma/data/veladesk.db"
+ENV VELADESK_MASTER_KEY="placeholder_for_build_only_1234567890123456"
+
+# 1. Prisma Client explizit generieren
+RUN npx prisma generate
+
+# 2. Build ausführen (mit Error-Logging)
+RUN npm run build || (echo "Build failed! Check the output above for Next.js errors." && exit 1)
 
 # Stage 3: Runner
 FROM node:22-alpine AS runner
