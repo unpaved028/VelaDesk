@@ -1,7 +1,7 @@
 services:
   veladesk-app:
     container_name: veladesk-app
-    image: ghcr.io/dein-github-username/veladesk:latest
+    image: ghcr.io/unpaved028/veladesk:latest
     restart: always
     env_file: .env
     volumes:

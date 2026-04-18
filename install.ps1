@@ -73,6 +73,9 @@ POSTGRES_DB=veladesk_db
 
 # The URL of your application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Cloudflare Tunnel Token (optional, for external access)
+CLOUDFLARE_TUNNEL_TOKEN=
 "@
     Set-Content -Path ".env" -Value $envContent
     Write-Host "[+] Generated .env successfully." -ForegroundColor Green

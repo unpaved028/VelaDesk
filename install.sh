@@ -64,6 +64,9 @@ POSTGRES_DB=veladesk_db
 
 # The URL of your application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Cloudflare Tunnel Token (optional, for external access)
+CLOUDFLARE_TUNNEL_TOKEN=
 EOF
   echo "[+] Done. Your VELADESK_MASTER_KEY has been generated."
 else
