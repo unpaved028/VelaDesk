@@ -50,6 +50,8 @@ docs/
 *.agent
 .claude/
 .gemini/
+AGENTS.md
+CLAUDE.md
 agents.md
 claude.md
 *.db
