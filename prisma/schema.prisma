@@ -1,0 +1,351 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Mandanten-Management (Multi-Tenancy)
+model Tenant {
+  id         String      @id @default(cuid())
+  name       String // Name des Kunden oder der Organisation
+  domain     String?     @unique // Zur Zuordnung bei E-Mail-Eingang
+  createdAt  DateTime    @default(now())
+
+  // Business Hours for SLA calculation
+  businessStartTime String @default("08:00") // Format: HH:mm
+  businessEndTime   String @default("17:00") // Format: HH:mm
+  businessDays      String @default("1,2,3,4,5") // 1=Monday, 7=Sunday
+  timezone          String @default("Europe/Berlin")
+
+  workspaces Workspace[]
+  users      User[]
+  customers  Customer[]
+}
+
+// 2. Abteilungen / Bereiche (IT, HR, Maintenance)
+model Workspace {
+  id            String           @id @default(cuid())
+  tenantId      String
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  name          String // z.B. "IT-Support", "Personalabteilung"
+  type          String // "ITSM", "ESM", "HR"
+  tickets       Ticket[]
+  slas          SLA_Policy[]
+  categories    TicketCategory[]
+  mailboxConfig MailboxConfig?
+  routingRules  RoutingRule[]
+
+  @@index([tenantId])
+}
+
+// 3. Benutzer & Rollen (Agenten vs. Kunden)
+model User {
+  id              String     @id @default(cuid())
+  tenantId        String
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  email           String     @unique
+  name            String
+  role            Role       @default(CUSTOMER) // AGENT, ADMIN, CUSTOMER
+  assignedTickets Ticket[]   @relation("AssignedAgent")
+  assets          Asset[]
+  approvals       Approval[]
+  ticketEvents    TicketEvent[]
+
+  @@index([tenantId])
+}
+
+enum Role {
+  ADMIN
+  AGENT
+  CUSTOMER
+}
+
+// 4. Das Ticket-System (ITIL-orientiert)
+model Ticket {
+  id          Int       @id @default(autoincrement())
+  tenantId    String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  categoryId String?
+  category   TicketCategory? @relation(fields: [categoryId], references: [id])
+
+  subject     String
+  description String
+  status      TicketStatus @default(NEW)
+  priority    Priority     @default(MEDIUM)
+
+  // ITIL Klassifizierung
+  itilType ITILType @default(INCIDENT) // INCIDENT, SERVICE_REQUEST, PROBLEM, CHANGE
+
+  requesterId     String
+  assignedAgentId String?
+  assignedAgent   User?   @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+
+  messages Message[]
+
+  // Routing & metadata tags (comma-separated, e.g. "AUTO_ROUTED,TO_MATCH")
+  // Using String instead of array since SQLite has no native array type
+  tags String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets       Asset[]
+  approvals    Approval[]
+  ticketEvents TicketEvent[]
+
+  @@index([tenantId])
+  @@index([workspaceId])
+  @@index([status])
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ITILType {
+  INCIDENT
+  SERVICE_REQUEST
+  PROBLEM
+  CHANGE
+}
+
+// 5. Konversationen (Posteingang-Logik)
+model Message {
+  id         String   @id @default(cuid())
+  ticketId   Int
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  authorId   String
+  body       String
+  isInternal Boolean  @default(false) // Für interne Notizen (Agenten-Only)
+  createdAt  DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+// 6. Taxonomy & SLAs
+model TicketCategory {
+  id          String     @id @default(cuid())
+  tenantId    String
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  name        String
+  description String?
+  tickets     Ticket[]
+
+  @@index([tenantId])
+}
+
+model SLA_Policy {
+  id              String     @id @default(cuid())
+  tenantId        String
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id])
+  name            String
+  responseHours   Int        @default(4)
+  resolutionHours Int        @default(24)
+
+  @@index([tenantId])
+}
+
+// Platzhalter für fehlende Modelle aus den Relationen
+model Customer {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  name     String
+  email    String
+
+  @@index([tenantId])
+}
+
+// 6. Global System Configuration
+model SystemConfig {
+  id                 String   @id @default("global") // Single record for global config
+  appVersion         String   @default("0.1.0") // The current expected DB version
+  baseUrl            String   @default("http://localhost:3000")
+  defaultTimezone    String   @default("UTC")
+  systemEmailSender  String   @default("noreply@veladesk.local")
+  defaultWorkspaceId String? // Catch-All: Workspace for unmatched emails
+  
+  // Offsite Backup Configuration
+  backupSchedule     String   @default("0 3 * * *") // Cron pattern, default 03:00 daily
+  backupTargetMailbox String? // Email address of the MailboxConfig to use for OneDrive upload
+  backupTargetFolder String   @default("VelaDeskBackups") // Target folder in OneDrive or SharePoint
+
+  // Cloudflare Tunnel Configuration
+  cloudflareTunnelToken String?     // MUST be encrypted via encryptSecret(value, "SYSTEM") — SOP-05
+  
+  updatedAt          DateTime @updatedAt
+}
+
+// 7. Graph API & Mailbox Config
+// Task 0.13.1: M365 Credential Schema
+// clientSecret MUST be encrypted via encryptSecret() before storage (SOP-05).
+model MailboxConfig {
+  id          String    @id @default(cuid())
+  tenantId    String
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  // The email address of the Microsoft 365 Shared Mailbox (e.g. support@systemhaus.de)
+  mailboxAddress String
+
+  clientId     String
+  clientSecret String // MUST be encrypted via encryptSecret(value, tenantId) — SOP-05
+  msTenantId   String
+
+  isActive  Boolean   @default(true)
+  lastSync  DateTime? // Timestamp of last successful Graph API sync run
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// 8. Email Routing Rules (Email -> Workspace Zuordnung)
+model RoutingRule {
+  id          String    @id @default(cuid())
+  tenantId    String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  emailPattern String // Glob/regex pattern, e.g. "*@contoso.com" or "support@*"
+  priority     Int     @default(100) // Lower number = evaluated first
+  isActive     Boolean @default(true)
+  description  String? // Optional human-readable description
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Enforce tenant isolation on every query
+  @@index([tenantId])
+  // Optimized lookup: active rules ordered by priority for a tenant
+  @@index([tenantId, isActive, priority])
+}
+
+// 9. Magic Link Tokens (Passwordless Customer Portal Auth)
+// Single-use, time-limited tokens for secure email-based login.
+// Each token is scoped to a tenantId to enforce data isolation.
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  tenantId  String
+  token     String    @unique // Cryptographically secure random token
+  email     String // The customer's email address this token was issued to
+  expiresAt DateTime // Token TTL — invalid after this timestamp
+  usedAt    DateTime? // Null = unused. Set upon first successful validation (single-use).
+  createdAt DateTime  @default(now())
+
+  // Enforce tenant isolation on every query
+  @@index([tenantId])
+  // Fast lookup by token during validation
+  @@index([token])
+  // Cleanup query: find expired tokens
+  @@index([expiresAt])
+}
+
+// 10. CMDB - Configuration Management Database (Assets)
+// Represents physical or virtual configuration items
+model Asset {
+  id       String @id @default(cuid())
+  tenantId String
+
+  name            String
+  type            String
+  status          String
+  serialNumber    String?
+  warrantyExpires DateTime?
+
+  assignedToId String?
+  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
+  tickets      Ticket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// 11. Approval Workflow Engine
+model Approval {
+  id       String @id @default(cuid())
+  tenantId String
+
+  ticketId Int
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  approverId String
+  approver   User   @relation(fields: [approverId], references: [id])
+
+  status ApprovalStatus @default(PENDING)
+  step   Int            @default(1) // Mehrstufige Freigaben
+
+  reason String? // Kommentar vom Approver
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([approverId])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// 12. Macros (Canned Responses)
+model Macro {
+  id       String @id @default(cuid())
+  tenantId String
+  title    String
+  body     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+enum EventAction {
+  STATUS_CHANGED
+  ASSIGNED
+  PRIORITY_CHANGED
+}
+
+// 13. Audit Log (Ticket Events)
+model TicketEvent {
+  id        String      @id @default(cuid())
+  tenantId  String
+  ticketId  Int
+  ticket    Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  action    EventAction
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime    @default(now())
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([userId])
+}

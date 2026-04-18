@@ -1,0 +1,35 @@
+services:
+  veladesk-app:
+    container_name: veladesk-app
+    image: ghcr.io/dein-github-username/veladesk:latest
+    restart: always
+    env_file: .env
+    volumes:
+      - ./data:/app/prisma/data # Persistente SQLite DB
+    networks:
+      - veladesk-network
+
+  cloudflared:
+    container_name: veladesk-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: always
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run
+    depends_on:
+      - veladesk-app
+    networks:
+      - veladesk-network
+
+  watchtower:
+    container_name: veladesk-updater
+    image: containrrr/watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 3600 --cleanup
+    # Watchtower prüft jede Stunde auf neue Images bei GitHub
+
+networks:
+  veladesk-network:
+    driver: bridge
