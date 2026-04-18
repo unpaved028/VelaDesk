@@ -48,3 +48,11 @@ next-env.d.ts
 prompts/
 docs/
 *.agent
+.claude/
+.gemini/
+agents.md
+claude.md
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
