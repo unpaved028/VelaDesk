@@ -2,7 +2,7 @@
 set -e
 
 # VelaDesk - Linux Install Script
-# Usage: curl -fsSL https://raw.githubusercontent.com/rene-jung/VelaDesk/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.sh | sudo bash
 
 echo "====================================================="
 echo "   VelaDesk - ITSM/CSM System - Installer               "
@@ -15,7 +15,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 VELADESK_DIR="/opt/VelaDesk"
-REPO_RAW_URL="https://raw.githubusercontent.com/rene-jung/VelaDesk/main"
+REPO_RAW_URL="https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master"
 
 # 1. Install Docker if not present
 if ! command -v docker &> /dev/null; then

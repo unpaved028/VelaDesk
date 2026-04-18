@@ -1,3 +1,19 @@
+# VelaDesk
+
+Ein mandantenfähiges, leichtgewichtiges CSM/ITSM-System.
+
+## Schnellinstallation (Linux / Raspberry Pi)
+
+Mit dem folgenden Befehl wird VelaDesk vollautomatisch inklusive Docker installiert, gestartet und konfiguriert (inkl. `.env` und Master-Key-Generierung):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.sh | sudo bash
+```
+
+Die App ist anschließend unter `http://<IP-Adresse>:3000` erreichbar. Die Konfiguration landet unter `/opt/VelaDesk/`.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
