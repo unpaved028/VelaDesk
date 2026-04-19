@@ -6,9 +6,21 @@ import crypto from 'crypto';
  */
 const MASTER_KEY = process.env.VELADESK_MASTER_KEY;
 
-if (!MASTER_KEY) {
-  // Fail-fast according to SOP-05
-  throw new Error('CRITICAL SECURITY ERROR: VELADESK_MASTER_KEY is not set in environment variables.');
+// GANZ OBEN: Das sagt Next.js, dass die Route nicht statisch gebaut werden darf
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from 'next/server';
+// ... deine anderen Imports
+
+// DIE FUNKTION:
+export async function POST(request: Request) {
+
+  // HIERHIN KOMMT DER CHECK (Zur Laufzeit, nicht beim Build):
+  if (!process.env.VELADESK_MASTER_KEY) {
+    throw new Error("CRITICAL SECURITY ERROR: VELADESK_MASTER_KEY is not set");
+  }
+
+  // ... hier geht der restliche Code des Agenten weiter
 }
 
 const ALGORITHM = 'aes-256-gcm';
