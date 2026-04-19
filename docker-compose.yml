@@ -4,6 +4,11 @@ services:
     image: ghcr.io/unpaved028/veladesk:latest
     restart: always
     env_file: .env
+    ports:
+      - "3000:3000"
+    environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
     volumes:
       - ./data:/app/prisma/data # Persistente SQLite DB
     networks:
