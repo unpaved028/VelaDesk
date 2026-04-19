@@ -13,18 +13,21 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Umgebungsvariablen für den Build (verhindert Abstürze)
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
-ENV DATABASE_URL="file:./prisma/data/veladesk.db"
+# Umgebungsvariablen (mit = Zeichen für saubere Docker-Syntax)
+ENV NEXT_TELEMETRY_DISABLED="1"
+ENV NODE_ENV="production"
+ENV DATABASE_URL="file:./build-dummy.db"
 ENV VELADESK_MASTER_KEY="placeholder_for_build_only_1234567890123456"
 
 # 1. Prisma Client explizit generieren
 RUN npx prisma generate
 
-# 2. Build ausführen (mit Error-Logging)
-RUN npm run build || (echo "Build failed! Check the output above for Next.js errors." && exit 1)
+# 2. NEU: Eine temporäre, leere Datenbank für den Build erstellen
+# Das verhindert Fehler, wenn Next.js statische Seiten vorab rendert
+RUN npx prisma db push --skip-generate
 
+# 3. Build ausführen
+RUN npm run build
 # Stage 3: Runner
 FROM node:22-alpine AS runner
 WORKDIR /app
