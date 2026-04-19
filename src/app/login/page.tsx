@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Globe, Mail, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 
-export default function LoginPage() {
+// 1. Die ursprüngliche Komponente (ohne export default)
+function LoginContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -57,15 +58,15 @@ export default function LoginPage() {
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
             <p className="text-sm font-medium text-red-400">
               {urlError === 'session_expired' ? 'Your session has expired. Please sign in again.'
-               : urlError === 'missing_token' ? 'Invalid login link. Please request a new one.'
-               : decodeURIComponent(urlError)}
+                : urlError === 'missing_token' ? 'Invalid login link. Please request a new one.'
+                  : decodeURIComponent(urlError)}
             </p>
           </div>
         )}
 
         {/* Login Form Card */}
         <div className="w-full bg-white/[0.03] backdrop-blur-3xl border border-white/5 p-10 rounded-[40px] shadow-2xl flex flex-col gap-10 min-h-[440px] justify-center transition-all duration-500">
-          
+
           {status === 'sent' ? (
             <div className="flex flex-col items-center text-center gap-6 animate-in fade-in zoom-in duration-500">
               <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.1)]">
@@ -74,12 +75,12 @@ export default function LoginPage() {
               <div className="flex flex-col gap-2">
                 <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
                 <p className="text-white/40 text-sm font-medium leading-relaxed">
-                  We've sent a magic link to <br/>
-                  <span className="text-white font-bold">{email}</span>. 
+                  We've sent a magic link to <br />
+                  <span className="text-white font-bold">{email}</span>.
                   Click the link in the email to sign in instantly.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setStatus('idle')}
                 className="text-xs font-bold uppercase tracking-widest text-white/20 hover:text-white transition-colors mt-4 py-2"
               >
@@ -106,16 +107,16 @@ export default function LoginPage() {
                   <div className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-white transition-colors">
                     <Mail className="w-5 h-5" />
                   </div>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="email@company.com"
                     className="w-full h-16 bg-white/[0.05] border border-white/5 text-sm font-bold rounded-2xl pl-14 pr-6 focus:outline-none focus:ring-4 focus:ring-white/5 focus:border-white/10 placeholder:text-white/10 transition-all"
                   />
                 </div>
-                
-                <button 
+
+                <button
                   onClick={handleSendMagicLink}
                   disabled={status === 'loading' || !email}
                   className="w-full h-16 bg-white text-[#0b0f10] rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-white/90 hover:scale-[1.02] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -142,9 +143,24 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <div className="flex flex-col items-center gap-2 opacity-20 hover:opacity-100 transition-opacity duration-500">
-           <p className="text-[10px] uppercase font-bold tracking-widest">© 2024 VelaDesk Computing Systems</p>
+          <p className="text-[10px] uppercase font-bold tracking-widest">© 2024 VelaDesk Computing Systems</p>
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Die neue exportierte Hauptkomponente mit dem Suspense-Wrapper
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0b0f10]">
+          <Loader2 className="w-8 h-8 animate-spin text-white/20" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

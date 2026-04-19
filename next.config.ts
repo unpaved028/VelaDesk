@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Zwingend erforderlich für unser Dockerfile
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  output: 'standalone',
+  typescript: {
+    ignoreBuildErrors: true, // Behalten wir zur Sicherheit noch drin
+  },
+  // eslint-Block komplett entfernt
 }
-module.exports = nextConfig
+
+export default nextConfig; // oder module.exports = nextConfig; je nachdem was da stand
