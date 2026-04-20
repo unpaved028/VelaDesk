@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface ChatBubbleProps {
   body: string;
@@ -13,8 +14,10 @@ export const ChatBubble = ({ body, variant, authorName, timestamp, avatarUrl }: 
   if (variant === 'customer') {
     return (
       <div className="flex space-x-4 max-w-3xl">
-        <img 
+        <Image 
           src={avatarUrl || "/avatar-placeholder.jpg"} 
+          width={40}
+          height={40}
           className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/20" 
           alt={authorName || "User"} 
         />
