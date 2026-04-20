@@ -26,26 +26,26 @@ export const StatusActions = ({ ticketId, currentStatus }: StatusActionsProps) =
       <button
         onClick={() => handleStatusChange('PENDING')}
         disabled={currentStatus === 'PENDING'}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
           currentStatus === 'PENDING'
-            ? 'bg-[#fffde7] text-[#fbc02d] dark:bg-tertiary/20 dark:text-tertiary opacity-70 cursor-not-allowed'
-            : 'bg-surface-container hover:bg-surface-container-high text-on-surface dark:bg-white/5 dark:hover:bg-white/10 dark:text-white'
+            ? 'bg-secondary-container text-on-secondary-container shadow-inner opacity-50 cursor-not-allowed'
+            : 'bg-surface-container-high hover:bg-secondary hover:text-white text-on-surface hover:shadow-lg hover:shadow-secondary/20 hover:-translate-y-0.5'
         }`}
       >
-        <Clock className="w-4 h-4" />
-        Pending
+        <span className="material-symbols-outlined text-[18px]">history_toggle_off</span>
+        Set Pending
       </button>
       <button
         onClick={() => handleStatusChange('RESOLVED')}
         disabled={currentStatus === 'RESOLVED'}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
           currentStatus === 'RESOLVED'
-            ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 opacity-70 cursor-not-allowed'
-            : 'bg-surface-container hover:bg-surface-container-high text-on-surface dark:bg-white/5 dark:hover:bg-white/10 dark:text-white'
+            ? 'bg-primary-container text-on-primary-container shadow-inner opacity-50 cursor-not-allowed'
+            : 'bg-surface-container-high hover:bg-primary-fixed hover:text-on-primary-fixed text-on-surface hover:shadow-lg hover:shadow-primary-fixed/20 hover:-translate-y-0.5'
         }`}
       >
-        <CheckCircle className="w-4 h-4" />
-        Close Ticket
+        <span className="material-symbols-outlined text-[18px]">task_alt</span>
+        Resolve Ticket
       </button>
     </div>
   );

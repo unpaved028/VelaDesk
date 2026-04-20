@@ -5,32 +5,59 @@ interface ChatBubbleProps {
   variant: 'customer' | 'agent' | 'internal';
   authorName?: string;
   timestamp?: string;
+  avatarUrl?: string;
 }
 
-export const ChatBubble = ({ body, variant, authorName, timestamp }: ChatBubbleProps) => {
-  const isRightAligned = variant !== 'customer';
-
-  // Base bubble styles
-  const baseBubbleStyle = "p-5 rounded-2xl text-sm max-w-2xl";
-  
-  // Variant specific styles
-  const variantStyles = {
-    customer: "bg-surface-container-low dark:bg-surface-container-high/20 rounded-tl-none text-on-background dark:text-on-surface/90",
-    agent: "bg-tertiary-container dark:bg-primary/30 rounded-tr-none text-on-tertiary-container dark:text-on-surface/90",
-    internal: "bg-[#fff9c4] dark:bg-tertiary/10 border border-[#fbc02d]/20 dark:border-tertiary/20 rounded-tr-none text-on-background dark:text-tertiary-fixed-dim/90 italic"
-  };
-
-  return (
-    <div className={`flex gap-4 w-full ${isRightAligned ? 'ml-auto flex-row-reverse' : ''}`}>
-      <div className={`${baseBubbleStyle} ${variantStyles[variant]}`}>
-        {(authorName || timestamp) && (
-          <div className="flex items-center gap-2 mb-1 opacity-60 text-[10px] uppercase font-bold tracking-wider">
-            {authorName && <span>{authorName}</span>}
-            {authorName && timestamp && <span>•</span>}
-            {timestamp && <span>{timestamp}</span>}
+export const ChatBubble = ({ body, variant, authorName, timestamp, avatarUrl }: ChatBubbleProps) => {
+  // Scenario 1: Customer/User Message (Left aligned)
+  if (variant === 'customer') {
+    return (
+      <div className="flex space-x-4 max-w-3xl">
+        <img 
+          src={avatarUrl || "/avatar-placeholder.jpg"} 
+          className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/20" 
+          alt={authorName || "User"} 
+        />
+        <div>
+          <div className="flex items-baseline space-x-2 mb-1">
+            <span className="font-bold text-sm text-on-surface">{authorName || 'Customer'}</span>
+            <span className="text-xs text-outline">{timestamp}</span>
           </div>
-        )}
-        <div className="whitespace-pre-wrap">{body}</div>
+          <div className="bg-surface-container p-4 rounded-b-xl rounded-tr-xl text-sm text-on-surface leading-relaxed">
+            {body}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Scenario 2: System Automation / Internal Note / Agent (Refined for Aero-Luxe)
+  const isInternal = variant === 'internal';
+  
+  return (
+    <div className={`flex space-x-4 max-w-3xl ${variant === 'agent' ? 'ml-14' : 'ml-14'}`}>
+      <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/20">
+        <span className="material-symbols-outlined text-sm text-outline">
+          {variant === 'agent' ? 'person' : 'smart_toy'}
+        </span>
+      </div>
+      <div className="flex-1">
+        <div className="flex items-baseline space-x-2 mb-1">
+          <span className="font-bold text-sm text-on-surface-variant">
+            {authorName || (variant === 'agent' ? 'Agent' : 'System Analysis')}
+          </span>
+          {isInternal && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-secondary/10 text-secondary uppercase">Internal</span>
+          )}
+          <span className="text-xs text-outline font-normal">{timestamp}</span>
+        </div>
+        <div className={`p-4 rounded-b-xl rounded-tr-xl text-sm leading-relaxed ${
+          isInternal 
+            ? 'bg-secondary-container/20 border border-secondary/20 text-on-surface-variant' 
+            : 'bg-primary-container/10 border border-primary/10 text-on-surface'
+        }`}>
+          {body}
+        </div>
       </div>
     </div>
   );

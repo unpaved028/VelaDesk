@@ -1,135 +1,126 @@
-import { User, Clock, Building2, Phone, Mail, Laptop, Smartphone, Box } from 'lucide-react';
+'use client';
+
+import React from 'react';
 import { prisma } from '@/lib/db/prisma';
 
 interface ContextPanelProps {
   ticketId?: number;
 }
 
-export const ContextPanel = async ({ ticketId }: ContextPanelProps) => {
-  let requesterName = 'Alice Smith';
-
-  if (ticketId) {
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: ticketId }
-    });
-    
-    if (ticket) {
-      const user = await prisma.user.findUnique({
-        where: { id: ticket.requesterId }
-      });
-      if (user) requesterName = user.name;
-    }
-  }
+// 0.5.x: Context Panel (The 4th Column)
+// Based on SOP 03.3 Architecture
+export const ContextPanel = ({ ticketId }: ContextPanelProps) => {
+  // Mock data for initial fly-through, in real world this would be fetched
+  const requesterName = 'Sarah Jenkins';
+  const requesterTitle = 'Senior Product Manager';
+  const company = 'LuxeLabs Integration';
 
   return (
-    <aside className="w-80 bg-surface-container-high dark:bg-[#12181b] flex flex-col h-full border-l-0 overflow-y-auto custom-scrollbar shrink-0 min-h-0">
-      <div className="p-4 border-b border-surface-container dark:border-white/5 bg-transparent">
-        <h3 className="text-sm font-semibold text-on-background dark:text-white mb-4">Requester Details</h3>
+    <aside className="w-[320px] bg-surface-container-low flex flex-col shrink-0 border-l border-outline-variant/15 z-20 overflow-y-auto custom-scrollbar shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
+      {/* 1. Requester Header */}
+      <div className="p-6 border-b border-outline-variant/10">
+        <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest mb-6">Requester Insights</h3>
         
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-surface-container-low dark:bg-white/5 flex items-center justify-center">
-            <User className="w-6 h-6 text-on-surface-variant dark:text-white/70" />
+        <div className="flex flex-col items-center text-center">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-container to-primary-fixed shadow-xl shadow-primary/10 flex items-center justify-center mb-4 relative group">
+            <span className="text-3xl font-headline font-bold text-on-primary-container group-hover:scale-110 transition-transform">{requesterName.charAt(0)}</span>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-surface-container-lowest border-2 border-surface-container-low flex items-center justify-center">
+              <span className="material-symbols-outlined text-[14px] text-primary">verified</span>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-on-background dark:text-white text-sm">{requesterName}</div>
-            <div className="text-xs text-on-surface-variant">Stakeholder</div>
-          </div>
+          <h4 className="font-headline font-bold text-on-surface text-lg leading-tight">{requesterName}</h4>
+          <p className="text-xs text-on-surface-variant font-medium mt-1">{requesterTitle}</p>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Mail className="w-4 h-4" />
-            <a href="mailto:alice@example.com" className="hover:underline">alice@example.com</a>
+        <div className="mt-8 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+              <span className="material-symbols-outlined text-[18px]">corporate_fare</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] text-outline font-bold uppercase tracking-tighter">Company</p>
+              <p className="text-xs font-bold text-on-surface">{company}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Phone className="w-4 h-4" />
-            <span>+1 (555) 123-4567</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Building2 className="w-4 h-4" />
-            <span>Acme Corp</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="p-4 border-b border-surface-container dark:border-white/5 bg-transparent mt-4">
-        <h3 className="text-sm font-semibold text-on-background dark:text-white mb-3 flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          SLA Overview
-        </h3>
-        <div className="space-y-3">
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-on-surface-variant">First Response</span>
-              <span className="font-medium text-green-600 dark:text-green-400">Met</span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+              <span className="material-symbols-outlined text-[18px]">alternate_email</span>
             </div>
-            <div className="w-full bg-surface-container dark:bg-white/10 rounded-full h-1.5">
-              <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '100%' }}></div>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-on-surface-variant">Resolution</span>
-              <span className="font-medium text-amber-600 dark:text-amber-400">In 4 hours</span>
-            </div>
-            <div className="w-full bg-surface-container dark:bg-white/10 rounded-full h-1.5">
-              <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '40%' }}></div>
+            <div className="flex-1">
+              <p className="text-[10px] text-outline font-bold uppercase tracking-tighter">Email</p>
+              <p className="text-xs font-bold text-on-surface">s.jenkins@luxelabs.io</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 bg-transparent mt-4">
-        <h3 className="text-sm font-semibold text-on-background dark:text-white mb-3 flex items-center gap-2">
-          <Box className="w-4 h-4" />
-          Linked Assets
-        </h3>
+      {/* 2. SLA Overview */}
+      <div className="p-6 border-b border-outline-variant/10">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest">SLA Performance</h3>
+          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-black uppercase">Service Gold</span>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <div className="flex justify-between text-[11px] font-bold mb-2">
+              <span className="text-on-surface">First Response</span>
+              <span className="text-primary tracking-tighter">04:12 Remaining</span>
+            </div>
+            <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+              <div className="h-full bg-primary-fixed w-[75%] rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]"></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-[11px] font-bold mb-2">
+              <span className="text-on-surface">Resolution</span>
+              <span className="text-outline/60 tracking-tighter">Due in 24h</span>
+            </div>
+            <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+              <div className="h-full bg-outline-variant w-[20%] rounded-full opacity-40"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Linked Assets */}
+      <div className="p-6">
+        <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest mb-6">Hardware Workspace</h3>
+        
         <div className="space-y-3">
-          {/* Mock Asset 1: MacBook Pro */}
-          <div className="p-3 bg-surface-container-low dark:bg-white/5 rounded-xl border border-surface-container dark:border-white/5 group hover:border-primary/30 transition-colors">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-surface-container dark:bg-white/5 rounded-lg text-on-surface-variant dark:text-white/60">
-                  <Laptop className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-on-background dark:text-white leading-none">MacBook Pro 14"</div>
-                  <div className="text-[10px] text-on-surface-variant dark:text-white/30 font-medium">SN: Z0X1Y2W3V4</div>
-                </div>
+          <div className="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl hover:shadow-lg transition-all cursor-pointer group">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                <span className="material-symbols-outlined text-outline group-hover:text-primary">laptop_mac</span>
               </div>
-              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" aria-label="Warranty Active" />
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-on-surface-variant dark:text-white/40 font-bold uppercase tracking-tighter">Warranty</span>
-              <span className="text-green-600 dark:text-green-400 font-black">Active · Oct 2026</span>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-on-surface">MBP 16" - M3 Max</p>
+                <p className="text-[10px] text-outline mt-0.5 tracking-tighter">SN: VEL-992121-PRO</p>
+              </div>
             </div>
           </div>
 
-          {/* Mock Asset 2: iPhone (Expired Case) */}
-          <div className="p-3 bg-surface-container-low dark:bg-white/5 rounded-xl border border-surface-container dark:border-white/5 opacity-80">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-surface-container dark:bg-white/5 rounded-lg text-on-surface-variant dark:text-white/60">
-                  <Smartphone className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-on-background dark:text-white leading-none">iPhone 15 Pro</div>
-                  <div className="text-[10px] text-on-surface-variant dark:text-white/30 font-medium">SN: IPH-9921-22</div>
-                </div>
+          <div className="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl hover:shadow-lg transition-all cursor-pointer group opacity-60 grayscale hover:opacity-100 hover:grayscale-0">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+                <span className="material-symbols-outlined text-outline">dock</span>
               </div>
-              <div className="w-2 h-2 rounded-full bg-red-500" aria-label="Warranty Expired" />
-            </div>
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-on-surface-variant dark:text-white/40 font-bold uppercase tracking-tighter">Warranty</span>
-              <span className="text-red-500/80 font-black">Expired</span>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-on-surface">Studio Display</p>
+                <p className="text-[10px] text-outline mt-0.5 tracking-tighter">SN: VEL-8811-EXT</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div className="p-4 mt-auto border-t border-surface-container dark:border-white/5">
-        <button className="w-full bg-surface-container-lowest dark:bg-white/5 border border-surface-container dark:border-white/10 text-on-background dark:text-white py-2 rounded-md text-sm font-medium hover:bg-surface-bright dark:hover:bg-white/10 transition-colors">
-          View Customer History
+
+      {/* Footer Actions */}
+      <div className="mt-auto p-6 bg-surface-container-high/30">
+        <button className="w-full py-3 px-4 rounded-xl border border-primary-fixed/20 bg-primary-container/20 text-on-primary-fixed text-xs font-bold hover:bg-primary-container transition-all flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">history</span>
+          User Activity Audit
         </button>
       </div>
     </aside>

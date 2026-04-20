@@ -1,70 +1,129 @@
 @import "tailwindcss";
 
-/* 1. VelaDesk Design System (Tailwind v4 Theme Variables) */
-@theme {
-  --color-surface: #f7f9fb;
-  --color-on-surface: #2a3439;
-  --color-on-surface-variant: #566166;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f0f4f7;
-  --color-surface-container: #e8eff3;
-  --color-surface-container-high: #e1e9ee;
-  --color-surface-bright: #f7f9fb;
+/* 
+  VelaDesk - Global Styles (Tailwind 4.0)
+  Aero-Luxe Design System
+*/
 
-  --color-background: #f7f9fb;
-  --color-on-background: #2a3439;
-
-  --color-primary: #565e74;
-  --color-primary-container: #dae2fd;
-  --color-on-primary-container: #4a5167;
-
-  --color-tertiary: #00668b;
-  --color-tertiary-fixed-dim: #05a9e3;
-  --color-tertiary-container: #2db7f2;
-  --color-on-tertiary-container: #003044;
-
-  --color-error: #9f403d;
-  --color-error-container: #fe8983;
-
-  --font-headline: 'Manrope', sans-serif;
-  --font-body: 'Inter', sans-serif;
+:root {
+  --font-headline: "Manrope", sans-serif;
+  --font-body: "Inter", "Manrope", sans-serif;
 }
 
-/* 2. Global Resets & Typography */
+:root {
+  /* Surface Tokens */
+  --color-surface: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f8fafc;
+  --color-surface-container: #f1f5f9;
+  --color-surface-container-high: #e2e8f0;
+  --color-surface-container-highest: #cbd5e1;
+  
+  /* Brand/Primary (Cyan) */
+  --color-primary: #008b8b;
+  --color-primary-container: #00fbff20;
+  --color-on-primary-container: #005a5a;
+  --color-primary-fixed: #00fbff;
+  --color-primary-fixed-dim: #00e0e4;
+  --color-on-primary-fixed: #001a1a;
+  
+  /* Secondary (Navy Focus) */
+  --color-secondary: #1b3656;
+  --color-secondary-container: #1b365615;
+  --color-on-secondary-container: #00223a;
+  
+  /* Semantic */
+  --color-error: #ff5252;
+  --color-error-container: #ff525210;
+  --color-success: #00e676;
+  
+  /* Outlines/Dividers */
+  --color-outline: #64748b;
+  --color-outline-variant: #94a3b8;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+}
+
+.dark {
+  /* Surface Tokens */
+  --color-surface: #000e23;
+  --color-surface-container-lowest: #000814;
+  --color-surface-container-low: #00122e;
+  --color-surface-container: #001639;
+  --color-surface-container-high: #001e4a;
+  --color-surface-container-highest: #00265a;
+  
+  /* Primary */
+  --color-primary: #00fbff;
+  --color-on-primary: #003738;
+  
+  /* Semantic */
+  --color-error: #ff8a80;
+  
+  /* Outlines */
+  --color-outline: #64748b;
+  --color-outline-variant: #334155;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #94a3b8;
+}
+
 @layer base {
+  * {
+    border-color: rgba(148, 163, 184, 0.2); /* outline-variant with opacity */
+    scroll-behavior: smooth;
+  }
+  
   body {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-headline);
+  ::selection {
+    background-color: rgba(0, 251, 251, 0.3); /* primary-fixed with opacity */
   }
 }
 
-/* 3. Custom Scrollbar Logic (Light & Dark) */
-@layer utilities {
-  .custom-scrollbar::-webkit-scrollbar {
-    display: none;
-    /* Hidden by default in Light Mode */
-  }
+/* Premium Navigation Transitions */
+.nav-active-glow {
+  box-shadow: 0 0 20px rgba(0, 251, 251, 0.2);
+}
 
-  .dark .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    display: block;
-  }
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
 
-  .dark .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #56616633;
-    border-radius: 10px;
-  }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e120;
+  border-radius: 10px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1b365640;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e140;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
