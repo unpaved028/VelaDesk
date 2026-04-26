@@ -10,42 +10,16 @@ interface SLACountdownProps {
   compact?: boolean;
 }
 
-export const SLACountdown = ({ 
-  label, 
-  deadline, 
-  targetDate, 
-  isCompleted = false, 
-  compact = false 
+export const SLACountdown = ({
+  label,
+  deadline,
+  targetDate,
+  isCompleted = false,
+  compact = false
 }: SLACountdownProps) => {
   const finalDeadline = deadline || targetDate;
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const [isOverdue, setIsOverdue] = useState(false);
-
-  useEffect(() => {
-    if (!finalDeadline || isCompleted) {
-      setFormattedTime();
-      return;
-    }
-
-    const calculate = () => {
-      const now = new Date();
-      const target = new Date(finalDeadline);
-      const diff = target.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setIsOverdue(true);
-        setTimeLeft(formatDuration(Math.abs(diff)));
-      } else {
-        setIsOverdue(false);
-        setTimeLeft(formatDuration(diff));
-      }
-    };
-
-    calculate(); // Run immediately
-    const timer = setInterval(calculate, 1000);
-
-    return () => clearInterval(timer);
-  }, [finalDeadline, isCompleted]);
 
   const setFormattedTime = () => {
     if (isCompleted) {
@@ -71,17 +45,43 @@ export const SLACountdown = ({
     return `${hours}h ${minutes}m ${seconds}s`;
   };
 
+  useEffect(() => {
+    if (!finalDeadline || isCompleted) {
+      setFormattedTime();
+      return;
+    }
+
+    const calculate = () => {
+      const now = new Date();
+      const target = new Date(finalDeadline);
+      const diff = target.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setIsOverdue(true);
+        setTimeLeft(formatDuration(Math.abs(diff)));
+      } else {
+        setIsOverdue(false);
+        setTimeLeft(formatDuration(diff));
+      }
+    };
+
+    calculate(); // Run immediately
+    const timer = setInterval(calculate, 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalDeadline, isCompleted]);
+
   if (!finalDeadline && !isCompleted) return null;
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight ${
-        isCompleted 
-          ? 'bg-primary/10 text-primary-fixed' 
-          : isOverdue 
-            ? 'bg-error/10 text-error animate-pulse' 
-            : 'bg-surface-container-highest text-on-surface'
-      }`}>
+      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight ${isCompleted
+        ? 'bg-primary/10 text-primary-fixed'
+        : isOverdue
+          ? 'bg-error/10 text-error animate-pulse'
+          : 'bg-surface-container-highest text-on-surface'
+        }`}>
         <span className="material-symbols-outlined text-[14px]">
           {isCompleted ? 'check_circle' : isOverdue ? 'timer_off' : 'schedule'}
         </span>
@@ -101,7 +101,7 @@ export const SLACountdown = ({
           </span>
         )}
       </div>
-      
+
       {!isCompleted && (
         <div className={`text-sm font-bold flex items-center gap-2 ${isOverdue ? 'text-error' : 'text-on-surface'}`}>
           <span className="material-symbols-outlined text-[18px]">
