@@ -1,75 +1,116 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface SLACountdownProps {
-  targetDate: Date;
+  label?: string;
+  deadline?: Date | string | null;
+  targetDate?: Date | string | null; // Support TicketQueueItem naming
+  isCompleted?: boolean;
   compact?: boolean;
 }
 
-export const SLACountdown = ({ targetDate, compact = false }: SLACountdownProps) => {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+export const SLACountdown = ({ 
+  label, 
+  deadline, 
+  targetDate, 
+  isCompleted = false, 
+  compact = false 
+}: SLACountdownProps) => {
+  const finalDeadline = deadline || targetDate;
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+  const [isOverdue, setIsOverdue] = useState(false);
 
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const difference = targetDate.getTime() - new Date().getTime();
-      setTimeLeft(difference);
+    if (!finalDeadline || isCompleted) {
+      setFormattedTime();
+      return;
+    }
+
+    const calculate = () => {
+      const now = new Date();
+      const target = new Date(finalDeadline);
+      const diff = target.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setIsOverdue(true);
+        setTimeLeft(formatDuration(Math.abs(diff)));
+      } else {
+        setIsOverdue(false);
+        setTimeLeft(formatDuration(diff));
+      }
     };
 
-    calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 1000);
+    calculate(); // Run immediately
+    const timer = setInterval(calculate, 1000);
 
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [finalDeadline, isCompleted]);
 
-  const isOverdue = timeLeft <= 0;
-  const absTimeLeft = Math.abs(timeLeft);
-  
-  const hours = Math.floor(absTimeLeft / (1000 * 60 * 60));
-  const minutes = Math.floor((absTimeLeft / 1000 / 60) % 60);
-  const seconds = Math.floor((absTimeLeft / 1000) % 60);
-
-  // Styling based on time remaining (Aero-Luxe)
-  let statusColor = "text-primary-fixed";
-  let pulseClass = "";
-
-  if (isOverdue) {
-    statusColor = "text-error font-bold";
-    pulseClass = "animate-pulse";
-  } else if (hours === 0 && minutes < 30) {
-    statusColor = "text-amber-400 font-bold";
-    pulseClass = "animate-pulse";
-  }
-
-  const formatTime = () => {
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m ${seconds}s`;
+  const setFormattedTime = () => {
+    if (isCompleted) {
+      setTimeLeft('Met');
+      setIsOverdue(false);
+    } else {
+      setTimeLeft(null);
+      setIsOverdue(false);
+    }
   };
+
+  const formatDuration = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (compact) {
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    }
+
+    return `${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  if (!finalDeadline && !isCompleted) return null;
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-1.5 ${statusColor} ${pulseClass}`}>
-        <span className="material-symbols-outlined text-[14px]">schedule</span>
-        <span className="text-[10px] font-bold tabular-nums">
-          {isOverdue ? `-${formatTime()}` : formatTime()}
+      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight ${
+        isCompleted 
+          ? 'bg-primary/10 text-primary-fixed' 
+          : isOverdue 
+            ? 'bg-error/10 text-error animate-pulse' 
+            : 'bg-surface-container-highest text-on-surface'
+      }`}>
+        <span className="material-symbols-outlined text-[14px]">
+          {isCompleted ? 'check_circle' : isOverdue ? 'timer_off' : 'schedule'}
         </span>
+        {isCompleted ? 'Met' : timeLeft}
       </div>
     );
   }
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-highest/50 border border-outline-variant/10 ${statusColor} ${pulseClass}`}>
-      <span className="material-symbols-outlined text-[18px]">
-        {isOverdue ? 'warning' : 'hourglass_top'}
-      </span>
-      <div className="flex flex-col">
-        <span className="text-[9px] uppercase tracking-widest leading-none opacity-70">
-          {isOverdue ? 'Overdue' : 'SLA Target'}
-        </span>
-        <span className="text-xs font-bold tabular-nums leading-tight">
-          {isOverdue ? `-${formatTime()}` : formatTime()}
-        </span>
+    <div className="flex flex-col gap-1 mb-4 p-3 rounded-lg bg-surface-container-high border border-outline-variant/10">
+      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-outline">
+        <span>{label}</span>
+        {isCompleted && (
+          <span className="flex items-center gap-1 text-primary-fixed">
+            <span className="material-symbols-outlined text-[12px] font-bold">check_circle</span>
+            Met
+          </span>
+        )}
       </div>
+      
+      {!isCompleted && (
+        <div className={`text-sm font-bold flex items-center gap-2 ${isOverdue ? 'text-error' : 'text-on-surface'}`}>
+          <span className="material-symbols-outlined text-[18px]">
+            {isOverdue ? 'timer_off' : 'schedule'}
+          </span>
+          {timeLeft}
+          {isOverdue && <span className="text-[10px] uppercase font-bold text-error/80 px-1.5 py-0.5 rounded bg-error/10">Overdue</span>}
+        </div>
+      )}
     </div>
   );
 };

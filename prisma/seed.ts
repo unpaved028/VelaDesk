@@ -24,6 +24,10 @@ async function main() {
     data: {
       name: 'Acme Corp',
       domain: 'acme.com',
+      businessStartTime: '08:00',
+      businessEndTime: '17:00',
+      businessDays: '1,2,3,4,5', // Mon-Fri
+      timezone: 'Europe/Berlin',
     },
   });
 
@@ -34,6 +38,29 @@ async function main() {
       name: 'IT-Support',
       type: 'ITSM',
     },
+  });
+
+  // 2b. Add SLA Policy to IT Workspace
+  await prisma.sLA_Policy.create({
+    data: {
+      tenantId: tenant.id,
+      workspaceId: itWorkspace.id,
+      name: 'Standard IT SLA',
+      priority: 'MEDIUM',
+      responseHours: 4,
+      resolutionHours: 24,
+    }
+  });
+
+  await prisma.sLA_Policy.create({
+    data: {
+      tenantId: tenant.id,
+      workspaceId: itWorkspace.id,
+      name: 'Critical IT SLA',
+      priority: 'HIGH',
+      responseHours: 1,
+      resolutionHours: 4,
+    }
   });
 
   const hrWorkspace = await prisma.workspace.create({

@@ -95,13 +95,27 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+
+  // SLA Tracking
+  slaResponseDeadline   DateTime?
+  slaResolutionDeadline DateTime?
+
   assets       Asset[]
   approvals    Approval[]
   ticketEvents TicketEvent[]
+  csatRatings  CsatRating[]
+
+  // ITIL Hierarchie (Parent/Child)
+  parentId    Int?
+  parent      Ticket?  @relation("TicketHierarchy", fields: [parentId], references: [id])
+  children    Ticket[] @relation("TicketHierarchy")
 
   @@index([tenantId])
   @@index([workspaceId])
   @@index([status])
+  @@index([parentId])
 }
 
 enum TicketStatus {
@@ -110,6 +124,7 @@ enum TicketStatus {
   PENDING
   RESOLVED
   CLOSED
+  ESCALATED
 }
 
 enum Priority {
@@ -158,6 +173,7 @@ model SLA_Policy {
   workspaceId     String?
   workspace       Workspace? @relation(fields: [workspaceId], references: [id])
   name            String
+  priority        Priority   @default(MEDIUM)
   responseHours   Int        @default(4)
   resolutionHours Int        @default(24)
 
@@ -330,6 +346,9 @@ enum EventAction {
   STATUS_CHANGED
   ASSIGNED
   PRIORITY_CHANGED
+  SLA_WARNING
+  SLA_BREACHED
+  CSAT_REQUESTED
 }
 
 // 13. Audit Log (Ticket Events)
@@ -348,4 +367,32 @@ model TicketEvent {
   @@index([tenantId])
   @@index([ticketId])
   @@index([userId])
+}
+
+// 14. CSAT (Customer Satisfaction Survey)
+// Single-use, token-based satisfaction surveys sent on ticket resolution.
+// Each token is scoped to a tenantId to enforce data isolation (SOP-02).
+enum CsatScore {
+  GOOD
+  NEUTRAL
+  BAD
+}
+
+model CsatRating {
+  id        String     @id @default(cuid())
+  tenantId  String
+  ticketId  Int
+  ticket    Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  token     String     @unique // Cryptographically secure single-use token
+  score     CsatScore? // Null until customer submits rating
+  comment   String?    // Optional free-text feedback
+  expiresAt DateTime   // Token TTL — invalid after this timestamp
+  ratedAt   DateTime?  // Null = not yet rated. Set upon submission (single-use).
+  createdAt DateTime   @default(now())
+
+  // Enforce tenant isolation on every query
+  @@index([tenantId])
+  @@index([ticketId])
+  // Fast lookup by token during validation
+  @@index([token])
 }

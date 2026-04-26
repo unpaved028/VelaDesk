@@ -1,6 +1,7 @@
 import React from 'react';
 import { TicketQueue } from "@/components/tickets/TicketQueue";
 import { ContextPanel } from "@/components/tickets/ContextPanel";
+import { prisma } from '@/lib/db/prisma';
 
 export default async function AgentLayout({
   children,
@@ -10,6 +11,17 @@ export default async function AgentLayout({
   params: Promise<{ id?: string }>;
 }) {
   const { id } = await params;
+  
+  // Fetch ticket for SLA data if ID exists
+  const ticket = id ? await prisma.ticket.findUnique({
+    where: { id: parseInt(id) },
+    select: {
+      slaResponseDeadline: true,
+      slaResolutionDeadline: true,
+      firstResponseAt: true,
+      resolvedAt: true
+    }
+  }) : null;
 
   return (
     <div className="flex flex-1 h-full overflow-hidden w-full min-h-0">
@@ -22,7 +34,13 @@ export default async function AgentLayout({
       </div>
 
       {/* 5. Context Panel */}
-      <ContextPanel ticketId={id ? parseInt(id) : undefined} />
+      <ContextPanel 
+        ticketId={id ? parseInt(id) : undefined} 
+        slaResponseDeadline={ticket?.slaResponseDeadline}
+        slaResolutionDeadline={ticket?.slaResolutionDeadline}
+        firstResponseAt={ticket?.firstResponseAt}
+        resolvedAt={ticket?.resolvedAt}
+      />
     </div>
   );
 }

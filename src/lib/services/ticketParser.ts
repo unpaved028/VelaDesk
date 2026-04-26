@@ -57,6 +57,10 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
 
     const tags = buildTags(routing);
 
+    const now = new Date();
+    const slaResponseDeadline = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Default: 4h
+    const slaResolutionDeadline = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Default: 24h
+
     const ticketData = {
       tenantId,
       workspaceId: routing.workspaceId,
@@ -64,6 +68,8 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
       description: email.bodyPreview || 'No Content',
       requesterId: senderAddress,
       tags,
+      slaResponseDeadline,
+      slaResolutionDeadline
     };
 
     const newTicket = await prisma.ticket.create({

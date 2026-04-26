@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (secrets — NEVER commit)
 .env*
 
 # vercel
@@ -40,20 +40,24 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# prisma generated client
 /src/generated/prisma
 
-*.md
+# ─── Agentic / AI tooling (NEVER publish) ─────────────────────
 .agents/
+.planning/
 .antigravity/
+.gemini/
+.claude/
 prompts/
 docs/
 *.agent
-.claude/
-.gemini/
 AGENTS.md
 CLAUDE.md
 agents.md
 claude.md
+
+# ─── Database files (local dev only) ──────────────────────────
 *.db
 *.db-journal
 *.sqlite

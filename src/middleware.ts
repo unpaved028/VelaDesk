@@ -4,9 +4,10 @@ import type { NextRequest } from 'next/server';
 /**
  * Edge Middleware — runs before every matched route.
  *
- * Two protection layers:
- * 1. /admin/* → Requires SUPER_ADMIN role (existing)
- * 2. /portal/* → Requires valid portal session JWT (v0.8.3)
+ * Three protection layers:
+ * 1. /setup interceptor → Redirects uninitialized systems to setup wizard
+ * 2. /admin/* → Requires SUPER_ADMIN role (existing)
+ * 3. /portal/* → Requires valid portal session JWT (v0.8.3)
  *
  * NOTE: Next.js Edge Middleware cannot use Node.js `crypto` module directly.
  * We perform a lightweight structural + expiry check here. The full HMAC
@@ -35,6 +36,59 @@ function isNewer(codeVer: string, dbVer: string) {
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // ─── First-Run Setup Interceptor ──────────────────────────────────
+  // Check if system is initialized before allowing access to main app routes.
+  // Excluded: /setup itself, API routes, static assets, auth routes
+  const isSetupExempt =
+    path.startsWith('/setup') ||
+    path.startsWith('/api') ||
+    path.startsWith('/login') ||
+    path.startsWith('/csat') ||
+    path.startsWith('/_next') ||
+    path.includes('.') || // Static files (favicon.ico, etc.)
+    path.startsWith('/apple-icon') ||
+    path.startsWith('/icon');
+
+  if (!isSetupExempt) {
+    try {
+      const initRes = await fetch(new URL('/api/system/init-status', request.url), {
+        // Edge Middleware internal fetch — no cookies needed, this is a system check
+        cache: 'no-store',
+      });
+
+      if (initRes.ok) {
+        const { data } = await initRes.json();
+        if (data && !data.isInitialized) {
+          // System not initialized → redirect to setup wizard
+          return NextResponse.redirect(new URL('/setup', request.url));
+        }
+      }
+    } catch (error) {
+      // If the init-status check fails (DB down, etc.), let the request through
+      // rather than locking users out. The app itself will show appropriate errors.
+      console.error('[Middleware] Init-status check failed:', error);
+    }
+  }
+
+  // ─── Setup Guard: Prevent access to /setup after initialization ───
+  if (path.startsWith('/setup')) {
+    try {
+      const initRes = await fetch(new URL('/api/system/init-status', request.url), {
+        cache: 'no-store',
+      });
+
+      if (initRes.ok) {
+        const { data } = await initRes.json();
+        if (data && data.isInitialized) {
+          // System already initialized → redirect away from setup
+          return NextResponse.redirect(new URL('/admin', request.url));
+        }
+      }
+    } catch (error) {
+      console.error('[Middleware] Setup guard check failed:', error);
+    }
+  }
 
   // ─── Admin Route Protection ───────────────────────────────────────
   if (path.startsWith('/admin')) {
@@ -153,6 +207,15 @@ function validateSessionStructure(token: string): { valid: boolean } {
 }
 
 export const config = {
-  // Run middleware on admin routes, admin API routes, AND portal routes
-  matcher: ['/admin/:path*', '/api/admin/:path*', '/portal/:path*'],
+  // Run middleware on ALL routes except static assets and Next.js internals
+  // This is required for the setup interceptor to work on root route (/)
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, icon.svg, apple-icon.svg (metadata files)
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|icon\\.svg|apple-icon\\.svg).*)',
+  ],
 };

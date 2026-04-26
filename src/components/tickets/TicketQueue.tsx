@@ -39,24 +39,20 @@ export const TicketQueue = async () => {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {tickets.map((ticket, index) => {
-          // Generate mock SLA targets: 
-          // 0: Overdue, 1: Soon (<30m), Others: Far out (+2h, +5h etc)
-          const slaTarget = new Date();
-          if (index === 0) slaTarget.setMinutes(slaTarget.getMinutes() - 15); // Overdue
-          else if (index === 1) slaTarget.setMinutes(slaTarget.getMinutes() + 25); // Soon
-          else slaTarget.setHours(slaTarget.getHours() + (index * 2)); // Far out
+          // Determine which SLA target to show in the queue list
+          const slaTarget = (!ticket.firstResponseAt ? ticket.slaResponseDeadline : ticket.slaResolutionDeadline) || null;
 
           return (
             <TicketQueueItem
               key={ticket.id}
               id={ticket.id.toString()}
-              ticketId={`INC-${1000 + index}`} 
+              ticketId={ticket.ticketNumber} 
               subject={ticket.subject}
-              snippet={ticket.description?.substring(0, 80)}
+              snippet={ticket.snippet || ticket.description?.substring(0, 80)}
               status={ticket.status}
               priority={(ticket.priority as any) || 'Medium'}
               isDefault={index === 0}
-              slaTarget={slaTarget}
+              slaTarget={slaTarget as any}
             />
           );
         })}

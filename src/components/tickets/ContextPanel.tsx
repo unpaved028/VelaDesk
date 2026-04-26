@@ -1,15 +1,25 @@
 'use client';
 
-import React from 'react';
-import { prisma } from '@/lib/db/prisma';
+import { SLACountdown } from './SLACountdown';
+import { RelatedTicketsSection } from './RelatedTicketsSection';
 
 interface ContextPanelProps {
   ticketId?: number;
+  slaResponseDeadline?: Date | string | null;
+  slaResolutionDeadline?: Date | string | null;
+  firstResponseAt?: Date | string | null;
+  resolvedAt?: Date | string | null;
 }
 
 // 0.5.x: Context Panel (The 4th Column)
 // Based on SOP 03.3 Architecture
-export const ContextPanel = ({ ticketId }: ContextPanelProps) => {
+export const ContextPanel = ({ 
+  ticketId, 
+  slaResponseDeadline, 
+  slaResolutionDeadline,
+  firstResponseAt,
+  resolvedAt
+}: ContextPanelProps) => {
   // Mock data for initial fly-through, in real world this would be fetched
   const requesterName = 'Sarah Jenkins';
   const requesterTitle = 'Senior Product Manager';
@@ -59,33 +69,26 @@ export const ContextPanel = ({ ticketId }: ContextPanelProps) => {
       <div className="p-6 border-b border-outline-variant/10">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest">SLA Performance</h3>
-          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-black uppercase">Service Gold</span>
+          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-black uppercase tracking-tighter">Service Gold</span>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <div className="flex justify-between text-[11px] font-bold mb-2">
-              <span className="text-on-surface">First Response</span>
-              <span className="text-primary tracking-tighter">04:12 Remaining</span>
-            </div>
-            <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-              <div className="h-full bg-primary-fixed w-[75%] rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]"></div>
-            </div>
-          </div>
+        <SLACountdown 
+          label="First Response" 
+          deadline={slaResponseDeadline} 
+          isCompleted={!!firstResponseAt} 
+        />
 
-          <div>
-            <div className="flex justify-between text-[11px] font-bold mb-2">
-              <span className="text-on-surface">Resolution</span>
-              <span className="text-outline/60 tracking-tighter">Due in 24h</span>
-            </div>
-            <div className="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-              <div className="h-full bg-outline-variant w-[20%] rounded-full opacity-40"></div>
-            </div>
-          </div>
-        </div>
+        <SLACountdown 
+          label="Resolution" 
+          deadline={slaResolutionDeadline} 
+          isCompleted={!!resolvedAt} 
+        />
       </div>
 
-      {/* 3. Linked Assets */}
+      {/* 3. Related Tickets (Parent/Child Links) */}
+      {ticketId && <RelatedTicketsSection ticketId={ticketId} />}
+
+      {/* 4. Linked Assets */}
       <div className="p-6">
         <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest mb-6">Hardware Workspace</h3>
         

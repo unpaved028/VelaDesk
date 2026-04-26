@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { saveCloudflareToken } from '@/lib/actions/networkActions';
+import { completeFirstRunSetup } from '@/app/actions/setupActions';
 import { 
   Rocket, 
   ChevronRight, 
@@ -9,29 +11,91 @@ import {
   Globe, 
   User, 
   ShieldCheck, 
+  Shield,
   CheckCircle2,
   Mail,
   Lock,
   Workflow,
   Zap,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
 
 export default function SetupWizardPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
-  const [cloudflareToken, setCloudflareToken] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const totalSteps = 5;
 
+  // Form state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [cloudflareToken, setCloudflareToken] = useState('');
+  const [appUrl, setAppUrl] = useState('');
+  const [systemEmail, setSystemEmail] = useState('');
+
   const handleNextStep = async () => {
-    if (step === 3 && cloudflareToken) {
-      setIsSaving(true);
-      await saveCloudflareToken(cloudflareToken);
-      setIsSaving(false);
+    setError(null);
+
+    // Step 2 → 3: Validate admin fields
+    if (step === 2) {
+      if (!firstName.trim() || !lastName.trim() || !adminEmail.trim()) {
+        setError('All fields are required to create the administrator account.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
     }
+
+    // Step 3: Save Cloudflare token (optional)
+    if (step === 3 && cloudflareToken.trim()) {
+      setIsSubmitting(true);
+      try {
+        await saveCloudflareToken(cloudflareToken);
+      } catch {
+        // Non-critical — user can configure later
+        console.warn('[Setup] Cloudflare token save failed, skipping...');
+      }
+      setIsSubmitting(false);
+    }
+
+    // Step 4 → 5: Execute the full setup
+    if (step === 4) {
+      setIsSubmitting(true);
+      try {
+        const result = await completeFirstRunSetup({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: adminEmail.trim(),
+          baseUrl: appUrl.trim() || 'http://localhost:3000',
+          systemEmail: systemEmail.trim() || 'noreply@veladesk.local',
+        });
+
+        if (!result.success) {
+          setError(result.error || 'Setup failed. Please try again.');
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+        setError(message);
+        setIsSubmitting(false);
+        return;
+      }
+      setIsSubmitting(false);
+    }
+
     setStep(prev => Math.min(prev + 1, totalSteps));
   };
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+
+  const prevStep = () => {
+    setError(null);
+    setStep(prev => Math.max(prev - 1, 1));
+  };
 
   const progress = (step / totalSteps) * 100;
 
@@ -82,15 +146,23 @@ export default function SetupWizardPage() {
               </span>
             </div>
 
+            {/* Error Banner */}
+            {error && (
+              <div className="mb-6 flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            )}
+
             {/* Content Area */}
-            <div className="min-h-[320px] animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="min-h-[320px]">
               
               {step === 1 && (
                 <div className="space-y-8">
                   <div>
                     <h2 className="text-2xl font-black tracking-tight mb-2">Systems Analysis</h2>
                     <p className="text-sm text-on-surface-variant/60 leading-relaxed">
-                      We've analyzed your environment. Everything looks ready for detonation.
+                      We&apos;ve analyzed your environment. Everything looks ready for detonation.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,11 +184,10 @@ export default function SetupWizardPage() {
                   </div>
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <InputGroup label="First Name" placeholder="Admin" icon={User} />
-                      <InputGroup label="Last Name" placeholder="User" />
+                      <InputGroup label="First Name" placeholder="Admin" icon={User} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                      <InputGroup label="Last Name" placeholder="User" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                     </div>
-                    <InputGroup label="Admin Email" placeholder="admin@domain.com" icon={Mail} />
-                    <InputGroup label="Password" type="password" placeholder="••••••••" icon={Lock} />
+                    <InputGroup label="Admin Email" placeholder="admin@domain.com" icon={Mail} value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
                   </div>
                 </div>
               )}
@@ -157,22 +228,26 @@ export default function SetupWizardPage() {
                   <div className="space-y-6">
                     <InputGroup 
                       label="Application URL" 
-                      placeholder="https://VelaDesk.yourdomain.com" 
+                      placeholder="https://veladesk.yourdomain.com" 
                       icon={Globe} 
                       description="Used for external links and magic link generation."
+                      value={appUrl}
+                      onChange={(e) => setAppUrl(e.target.value)}
                     />
                     <InputGroup 
                       label="System Email" 
                       placeholder="no-reply@yourdomain.com" 
                       icon={Mail}
                       description="The default sender address for system notifications."
+                      value={systemEmail}
+                      onChange={(e) => setSystemEmail(e.target.value)}
                     />
                   </div>
                 </div>
               )}
 
               {step === 5 && (
-                <div className="flex flex-col items-center py-6 text-center animate-in fade-in zoom-in duration-500">
+                <div className="flex flex-col items-center py-6 text-center">
                   <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-8 ring-8 ring-emerald-500/5">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                   </div>
@@ -184,7 +259,7 @@ export default function SetupWizardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl text-left">
                     {/* Option 1: Empty Start */}
                     <button 
-                      onClick={() => window.location.href = '/admin'}
+                      onClick={() => router.push('/admin')}
                       className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98]"
                     >
                       <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
@@ -198,7 +273,7 @@ export default function SetupWizardPage() {
 
                     {/* Option 2: MSP Best Practices */}
                     <button 
-                      onClick={() => window.location.href = '/admin?seed=true'}
+                      onClick={() => router.push('/admin?seed=true')}
                       className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98]"
                     >
                       <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -234,7 +309,7 @@ export default function SetupWizardPage() {
             </div>
 
             {/* Navigation Buttons */}
-            {step < 4 && (
+            {step < 5 && (
               <div className="mt-12 flex items-center justify-between">
                 <button 
                   onClick={prevStep}
@@ -248,10 +323,10 @@ export default function SetupWizardPage() {
                 </button>
                 <button 
                   onClick={handleNextStep}
-                  disabled={isSaving}
+                  disabled={isSubmitting}
                   className="flex items-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isSaving ? "Saving..." : (step === 3 ? "Finalize Setup" : "Next Step")}
+                  {isSubmitting ? "Processing..." : (step === 4 ? "Finalize Setup" : "Next Step")}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -276,7 +351,9 @@ export default function SetupWizardPage() {
 }
 
 // Internal Helper Components
-const StatusItem = ({ icon: Icon, label, status }: { icon: any, label: string, status: string }) => (
+import type { LucideIcon } from 'lucide-react';
+
+const StatusItem = ({ icon: Icon, label, status }: { icon: LucideIcon, label: string, status: string }) => (
   <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
       <Icon className="w-5 h-5 text-primary" />
@@ -288,7 +365,17 @@ const StatusItem = ({ icon: Icon, label, status }: { icon: any, label: string, s
   </div>
 );
 
-const InputGroup = ({ label, placeholder, icon: Icon, description, type = "text", value, onChange }: { label: string, placeholder: string, icon?: any, description?: string, type?: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+interface InputGroupProps {
+  label: string;
+  placeholder: string;
+  icon?: LucideIcon;
+  description?: string;
+  type?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const InputGroup = ({ label, placeholder, icon: Icon, description, type = "text", value, onChange }: InputGroupProps) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 opacity-60">
       {label}
