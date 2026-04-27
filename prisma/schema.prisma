@@ -10,10 +10,10 @@ datasource db {
 
 // 1. Mandanten-Management (Multi-Tenancy)
 model Tenant {
-  id         String      @id @default(cuid())
-  name       String // Name des Kunden oder der Organisation
-  domain     String?     @unique // Zur Zuordnung bei E-Mail-Eingang
-  createdAt  DateTime    @default(now())
+  id        String   @id @default(cuid())
+  name      String // Name des Kunden oder der Organisation
+  domain    String?  @unique // Zur Zuordnung bei E-Mail-Eingang
+  createdAt DateTime @default(now())
 
   // Business Hours for SLA calculation
   businessStartTime String @default("08:00") // Format: HH:mm
@@ -28,9 +28,9 @@ model Tenant {
 
 // 2. Abteilungen / Bereiche (IT, HR, Maintenance)
 model Workspace {
-  id            String           @id @default(cuid())
+  id            String             @id @default(cuid())
   tenantId      String
-  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
   name          String // z.B. "IT-Support", "Personalabteilung"
   type          String // "ITSM", "ESM", "HR"
   tickets       Ticket[]
@@ -38,22 +38,24 @@ model Workspace {
   categories    TicketCategory[]
   mailboxConfig MailboxConfig?
   routingRules  RoutingRule[]
+  articles      KnowledgeArticle[]
 
   @@index([tenantId])
 }
 
 // 3. Benutzer & Rollen (Agenten vs. Kunden)
 model User {
-  id              String     @id @default(cuid())
+  id              String             @id @default(cuid())
   tenantId        String
-  tenant          Tenant     @relation(fields: [tenantId], references: [id])
-  email           String     @unique
+  tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  email           String             @unique
   name            String
-  role            Role       @default(CUSTOMER) // AGENT, ADMIN, CUSTOMER
-  assignedTickets Ticket[]   @relation("AssignedAgent")
+  role            Role               @default(CUSTOMER) // AGENT, ADMIN, CUSTOMER
+  assignedTickets Ticket[]           @relation("AssignedAgent")
   assets          Asset[]
   approvals       Approval[]
   ticketEvents    TicketEvent[]
+  articles        KnowledgeArticle[]
 
   @@index([tenantId])
 }
@@ -108,9 +110,9 @@ model Ticket {
   csatRatings  CsatRating[]
 
   // ITIL Hierarchie (Parent/Child)
-  parentId    Int?
-  parent      Ticket?  @relation("TicketHierarchy", fields: [parentId], references: [id])
-  children    Ticket[] @relation("TicketHierarchy")
+  parentId Int?
+  parent   Ticket?  @relation("TicketHierarchy", fields: [parentId], references: [id])
+  children Ticket[] @relation("TicketHierarchy")
 
   @@index([tenantId])
   @@index([workspaceId])
@@ -193,22 +195,22 @@ model Customer {
 
 // 6. Global System Configuration
 model SystemConfig {
-  id                 String   @id @default("global") // Single record for global config
-  appVersion         String   @default("0.1.0") // The current expected DB version
-  baseUrl            String   @default("http://localhost:3000")
-  defaultTimezone    String   @default("UTC")
-  systemEmailSender  String   @default("noreply@veladesk.local")
+  id                 String  @id @default("global") // Single record for global config
+  appVersion         String  @default("0.1.0") // The current expected DB version
+  baseUrl            String  @default("http://localhost:3000")
+  defaultTimezone    String  @default("UTC")
+  systemEmailSender  String  @default("noreply@veladesk.local")
   defaultWorkspaceId String? // Catch-All: Workspace for unmatched emails
-  
+
   // Offsite Backup Configuration
-  backupSchedule     String   @default("0 3 * * *") // Cron pattern, default 03:00 daily
+  backupSchedule      String  @default("0 3 * * *") // Cron pattern, default 03:00 daily
   backupTargetMailbox String? // Email address of the MailboxConfig to use for OneDrive upload
-  backupTargetFolder String   @default("VelaDeskBackups") // Target folder in OneDrive or SharePoint
+  backupTargetFolder  String  @default("VelaDeskBackups") // Target folder in OneDrive or SharePoint
 
   // Cloudflare Tunnel Configuration
-  cloudflareTunnelToken String?     // MUST be encrypted via encryptSecret(value, "SYSTEM") — SOP-05
-  
-  updatedAt          DateTime @updatedAt
+  cloudflareTunnelToken String? // MUST be encrypted via encryptSecret(value, "SYSTEM") — SOP-05
+
+  updatedAt DateTime @updatedAt
 }
 
 // 7. Graph API & Mailbox Config
@@ -227,8 +229,8 @@ model MailboxConfig {
   clientSecret String // MUST be encrypted via encryptSecret(value, tenantId) — SOP-05
   msTenantId   String
 
-  isActive  Boolean   @default(true)
-  lastSync  DateTime? // Timestamp of last successful Graph API sync run
+  isActive Boolean   @default(true)
+  lastSync DateTime? // Timestamp of last successful Graph API sync run
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -385,9 +387,9 @@ model CsatRating {
   ticket    Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   token     String     @unique // Cryptographically secure single-use token
   score     CsatScore? // Null until customer submits rating
-  comment   String?    // Optional free-text feedback
-  expiresAt DateTime   // Token TTL — invalid after this timestamp
-  ratedAt   DateTime?  // Null = not yet rated. Set upon submission (single-use).
+  comment   String? // Optional free-text feedback
+  expiresAt DateTime // Token TTL — invalid after this timestamp
+  ratedAt   DateTime? // Null = not yet rated. Set upon submission (single-use).
   createdAt DateTime   @default(now())
 
   // Enforce tenant isolation on every query
@@ -395,4 +397,32 @@ model CsatRating {
   @@index([ticketId])
   // Fast lookup by token during validation
   @@index([token])
+}
+
+// 15. Knowledge Base (Articles)
+model KnowledgeArticle {
+  id          String     @id @default(cuid())
+  tenantId    String
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+
+  title    String
+  content  String
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  status ArticleStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([workspaceId])
+  @@index([authorId])
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

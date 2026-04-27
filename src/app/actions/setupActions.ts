@@ -3,6 +3,11 @@
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
 /**
  * Server Action: Complete the VelaDesk First-Run Setup.
  * 
@@ -30,16 +35,36 @@ interface SetupResult {
 export async function completeFirstRunSetup(payload: SetupPayload): Promise<SetupResult> {
   try {
     // Guard: Prevent re-initialization if an admin already exists
-    const existingAdmin = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-      select: { id: true },
-    });
+    // If the database has never been initialized, this might throw a "table not found" error.
+    try {
+      const existingAdmin = await prisma.user.findFirst({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      });
 
-    if (existingAdmin) {
-      return {
-        success: false,
-        error: 'System is already initialized. Setup cannot be run again.',
-      };
+      if (existingAdmin) {
+        return {
+          success: false,
+          error: 'System is already initialized. Setup cannot be run again.',
+        };
+      }
+      } catch (dbError: any) {
+      console.log('[completeFirstRunSetup] Database check failed. Attempting to initialize schema...', dbError.message);
+      try {
+        // Automatically push the schema to the database
+        await execAsync('npx prisma db push --accept-data-loss');
+        console.log('[completeFirstRunSetup] Schema initialized successfully.');
+        
+        // Force Prisma to disconnect so the next query reconnects with the fresh schema
+        // This clears any cached error states (like 'Table does not exist') from the previous failed query.
+        await prisma.$disconnect();
+      } catch (pushError: any) {
+        console.error('[completeFirstRunSetup] Failed to initialize database schema:', pushError);
+        return {
+          success: false,
+          error: 'Failed to initialize database schema. Please check the server logs.',
+        };
+      }
     }
 
     // Validate required fields
