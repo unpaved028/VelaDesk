@@ -1,6 +1,7 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 const prisma = new PrismaClient();
@@ -18,8 +19,8 @@ export async function getWorkspaces() {
       orderBy: { name: 'asc' }
     });
     return { success: true, data: workspaces, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -36,8 +37,8 @@ export async function createWorkspace(data: { tenantId: string; name: string; ty
     });
     revalidatePath('/admin/workspaces');
     return { success: true, data: workspace, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -52,7 +53,7 @@ export async function deleteWorkspace(id: string, tenantId: string) {
     });
     revalidatePath('/admin/workspaces');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

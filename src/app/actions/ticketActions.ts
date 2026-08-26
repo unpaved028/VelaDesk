@@ -2,8 +2,9 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
+import { Prisma } from '@prisma/client';
 import { SubmitReplySchema, UpdateStatusSchema, createErrorResponse } from '@/lib/validation/schemas';
-import { ZodError } from 'zod';
+import { requireAgentContext } from '@/lib/auth/session';
 
 export async function submitTicketReply(ticketId: number, body: string, type: 'PUBLIC' | 'INTERNAL') {
   try {
@@ -17,23 +18,9 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
     const { ticketId: validatedId, body: validatedBody, type: validatedType } = validation.data;
     const isInternal = validatedType === 'INTERNAL';
 
-    // Hardcode user and tenant for MVP (Simulating session)
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return createErrorResponse('No active tenant found');
-
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' }});
-    
-    if (!agent) {
-        agent = await prisma.user.create({
-            data: {
-                tenantId: currentTenantId,
-                email: 'agent@example.com',
-                name: 'Demo Agent',
-                role: 'AGENT'
-            }
-        });
-    }
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     const ticket = await prisma.ticket.findFirst({
       where: { id: validatedId, tenantId: currentTenantId }
@@ -41,7 +28,7 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
 
     if (!ticket) return createErrorResponse('Ticket not found');
 
-    const transactions: any[] = [];
+    const transactions: Prisma.PrismaPromise<unknown>[] = [];
 
     transactions.push(
       prisma.message.create({
@@ -49,17 +36,17 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
           ticketId: validatedId,
           body: validatedBody,
           isInternal,
-          authorId: agent.id
+          authorId: userId
         }
       })
     );
 
-    const isStatusChangeNeeded = ticket.status === 'NEW' && agent.role === 'AGENT';
-    const isAssignNeeded = !ticket.assignedAgentId && agent.role === 'AGENT';
+    const isStatusChangeNeeded = ticket.status === 'NEW';
+    const isAssignNeeded = !ticket.assignedAgentId;
 
-    const updateData: any = {};
+    const updateData: Prisma.TicketUncheckedUpdateInput = {};
     if (isStatusChangeNeeded) updateData.status = 'OPEN';
-    if (isAssignNeeded) updateData.assignedAgentId = agent.id;
+    if (isAssignNeeded) updateData.assignedAgentId = userId;
     
     // SLA Logic: Meeting Response SLA on first public reply
     if (validatedType === 'PUBLIC') {
@@ -80,7 +67,7 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
             data: {
               tenantId: currentTenantId,
               ticketId: ticket.id,
-              userId: agent.id,
+              userId: userId,
               action: 'STATUS_CHANGED',
               oldValue: ticket.status,
               newValue: 'OPEN'
@@ -95,10 +82,10 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
             data: {
               tenantId: currentTenantId,
               ticketId: ticket.id,
-              userId: agent.id,
+              userId: userId,
               action: 'ASSIGNED',
               oldValue: null,
-              newValue: agent.id
+              newValue: userId
             }
           })
         );
@@ -144,16 +131,9 @@ export async function updateTicketStatus(ticketId: number, status: 'OPEN' | 'RES
       return createErrorResponse(validation.error.issues[0]?.message || 'Invalid status update');
     }
 
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return createErrorResponse('No active tenant found');
-
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' }});
-    if (!agent) {
-       agent = await prisma.user.create({
-          data: { tenantId: currentTenantId, email: 'agent@example.com', name: 'Demo Agent', role: 'AGENT' }
-       });
-    }
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     const ticket = await prisma.ticket.findFirst({
       where: { id: validation.data.ticketId, tenantId: currentTenantId }
@@ -213,7 +193,7 @@ export async function updateTicketStatus(ticketId: number, status: 'OPEN' | 'RES
           data: {
             tenantId: currentTenantId,
             ticketId: ticket.id,
-            userId: agent.id,
+            userId: userId,
             action: 'STATUS_CHANGED',
             oldValue: oldStatus,
             newValue: newStatus
@@ -228,7 +208,7 @@ export async function updateTicketStatus(ticketId: number, status: 'OPEN' | 'RES
             data: {
               tenantId: currentTenantId,
               ticketId: ticket.id,
-              userId: agent.id,
+              userId: userId,
               action: 'CSAT_REQUESTED',
               oldValue: null,
               newValue: 'SURVEY_SENT'
@@ -281,16 +261,9 @@ export async function massResolveChildren(parentTicketId: number): Promise<{
   error: string | null;
 }> {
   try {
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return createErrorResponse('No active tenant found') as { success: false; data: null; error: string };
-
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' } });
-    if (!agent) {
-      agent = await prisma.user.create({
-        data: { tenantId: currentTenantId, email: 'agent@example.com', name: 'Demo Agent', role: 'AGENT' }
-      });
-    }
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error) as { success: false; data: null; error: string };
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     // 1. Validate parent exists AND belongs to current tenant
     const parentTicket = await prisma.ticket.findFirst({
@@ -358,7 +331,7 @@ export async function massResolveChildren(parentTicketId: number): Promise<{
             data: {
               tenantId: currentTenantId,
               ticketId: child.id,
-              userId: agent.id,
+              userId: userId,
               action: 'STATUS_CHANGED',
               oldValue: oldStatus,
               newValue: 'RESOLVED',
@@ -369,7 +342,7 @@ export async function massResolveChildren(parentTicketId: number): Promise<{
             data: {
               tenantId: currentTenantId,
               ticketId: child.id,
-              userId: agent.id,
+              userId: userId,
               action: 'CSAT_REQUESTED',
               oldValue: null,
               newValue: 'SURVEY_SENT',
@@ -379,7 +352,7 @@ export async function massResolveChildren(parentTicketId: number): Promise<{
           prisma.message.create({
             data: {
               ticketId: child.id,
-              authorId: agent.id,
+              authorId: userId,
               body: `Auto-resolved via parent ticket #${parentTicketId}. Root cause addressed in the parent Problem/Incident.`,
               isInternal: true,
             },

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db/prisma';
  * 
  * An instance is considered "initialized" when:
  * 1. A SystemConfig record exists, AND
- * 2. At least one User with role ADMIN exists
+ * 2. At least one User with role SUPER_ADMIN or ADMIN exists
  * 
  * This endpoint is intentionally unauthenticated — it only returns
  * a boolean flag, never sensitive data. Defense-in-depth: even if
@@ -27,7 +27,7 @@ export async function GET() {
         select: { id: true, appVersion: true },
       }),
       prisma.user.count({
-        where: { role: 'ADMIN' },
+        where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
       }),
     ]);
 

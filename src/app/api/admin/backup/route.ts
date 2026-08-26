@@ -1,32 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createReadStream, statSync } from 'fs';
-import path from 'path';
+import { requireSuperAdminContext, isDevAuthBypassEnabled } from '@/lib/auth/session';
+import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
 
 /**
  * GET /api/admin/backup
- * 
- * Downloads the current SQLite database file as a binary stream.
- * Protected by cookie-based SUPER_ADMIN role check.
- * 
- * Security: This route enforces its own RBAC check independent of
- * the middleware (defense in depth). API routes are not always
- * covered by the page-level middleware matcher.
+ *
+ * Streams the SQLite database file. Instance-level operation — SUPER_ADMIN only.
+ * Auth.js session is the source of truth (SOP-05). DEV_BYPASS_AUTH is ignored
+ * in production.
  */
-export async function GET(request: NextRequest) {
-  // ── RBAC: Only SUPER_ADMIN may download backups ──
-  const role = request.cookies.get('user_role')?.value;
-  const bypass = request.cookies.get('DEV_BYPASS_AUTH')?.value === 'true';
+export async function GET(request: Request) {
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const bypass = isDevAuthBypassEnabled(
+    /(?:^|;\s*)DEV_BYPASS_AUTH=true(?:;|$)/.test(cookieHeader) ? 'true' : undefined
+  );
 
-  if (!bypass && role !== 'SUPER_ADMIN') {
-    return NextResponse.json(
-      { success: false, data: null, error: 'Forbidden: SUPER_ADMIN role required.' },
-      { status: 403 }
-    );
+  if (!bypass) {
+    const authResult = await requireSuperAdminContext();
+    if (!authResult.ok) {
+      const status = authResult.error === 'Not authenticated.' ? 401 : 403;
+      return NextResponse.json(
+        { success: false, data: null, error: authResult.error },
+        { status }
+      );
+    }
   }
 
-  // ── Locate the SQLite database file ──
-  // The DATABASE_URL in .env is "file:./dev.db" which is resolved relative to prisma/
-  const dbPath = path.resolve(process.cwd(), 'prisma', 'dev.db');
+  const dbPath = getSqliteDatabasePath();
 
   try {
     const stat = statSync(dbPath);
@@ -40,10 +41,8 @@ export async function GET(request: NextRequest) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const fileName = `VelaDesk-backup-${timestamp}.db`;
 
-    // Stream the file as a binary download
     const stream = createReadStream(dbPath);
 
-    // Convert Node.js ReadStream to Web ReadableStream
     const webStream = new ReadableStream({
       start(controller) {
         stream.on('data', (chunk: string | Buffer) => {

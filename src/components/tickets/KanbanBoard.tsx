@@ -80,9 +80,17 @@ const KanbanColumn = ({ title, count, icon, children, colorClass }: ColumnProps)
   );
 };
 
+interface KanbanTicket {
+  id: string;
+  subject: string;
+  requester: string;
+  priority: KanbanCardProps['priority'];
+  itilType: KanbanCardProps['itilType'];
+  status: 'NEW' | 'OPEN' | 'PENDING' | 'RESOLVED';
+}
+
 export const KanbanBoard = () => {
-  // Mock Data
-  const mockTickets = [
+  const mockTickets: KanbanTicket[] = [
     { id: '8821', subject: 'Laptop Display flackert', requester: 'Max Mustermann', priority: 'URGENT', itilType: 'INCIDENT', status: 'NEW' },
     { id: '8822', subject: 'VPN Login funktioniert nicht', requester: 'Julia Jäger', priority: 'HIGH', itilType: 'INCIDENT', status: 'OPEN' },
     { id: '8823', subject: 'Neues MacBook M3 anfordern', requester: 'Rene Jung', priority: 'MEDIUM', itilType: 'SERVICE_REQUEST', status: 'PENDING' },
@@ -101,7 +109,9 @@ export const KanbanBoard = () => {
         colorClass="bg-blue-500"
         icon={<Clock className="w-3.5 h-3.5" />}
       >
-        {getTicketsByStatus('NEW').map(t => <KanbanCard key={t.id} {...t as any} />)}
+        {getTicketsByStatus('NEW').map(({ id, subject, requester, priority, itilType }) => (
+          <KanbanCard key={id} id={id} subject={subject} requester={requester} priority={priority} itilType={itilType} />
+        ))}
       </KanbanColumn>
 
       <KanbanColumn 
@@ -110,7 +120,9 @@ export const KanbanBoard = () => {
         colorClass="bg-amber-500"
         icon={<AlertCircle className="w-3.5 h-3.5" />}
       >
-        {getTicketsByStatus('OPEN').map(t => <KanbanCard key={t.id} {...t as any} />)}
+        {getTicketsByStatus('OPEN').map(({ id, subject, requester, priority, itilType }) => (
+          <KanbanCard key={id} id={id} subject={subject} requester={requester} priority={priority} itilType={itilType} />
+        ))}
       </KanbanColumn>
 
       <KanbanColumn 
@@ -119,7 +131,9 @@ export const KanbanBoard = () => {
         colorClass="bg-purple-500"
         icon={<Clock className="w-3.5 h-3.5" />}
       >
-        {getTicketsByStatus('PENDING').map(t => <KanbanCard key={t.id} {...t as any} />)}
+        {getTicketsByStatus('PENDING').map(({ id, subject, requester, priority, itilType }) => (
+          <KanbanCard key={id} id={id} subject={subject} requester={requester} priority={priority} itilType={itilType} />
+        ))}
       </KanbanColumn>
 
       <KanbanColumn 
@@ -128,7 +142,9 @@ export const KanbanBoard = () => {
         colorClass="bg-emerald-500"
         icon={<CheckCircle2 className="w-3.5 h-3.5" />}
       >
-        {getTicketsByStatus('RESOLVED').map(t => <KanbanCard key={t.id} {...t as any} />)}
+        {getTicketsByStatus('RESOLVED').map(({ id, subject, requester, priority, itilType }) => (
+          <KanbanCard key={id} id={id} subject={subject} requester={requester} priority={priority} itilType={itilType} />
+        ))}
       </KanbanColumn>
     </div>
   );

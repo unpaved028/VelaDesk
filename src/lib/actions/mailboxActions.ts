@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 import { encryptSecret } from '../services/encryption';
 
@@ -31,9 +32,9 @@ export async function getMailboxConfigs() {
     }));
 
     return { success: true, data: safeConfigs, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching mailbox config:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -82,9 +83,9 @@ export async function saveMailboxConfig(data: MailboxPayload) {
 
     revalidatePath('/admin/mailboxes');
     return { success: true, data: upserted, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving mailbox config:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -97,8 +98,8 @@ export async function deleteMailboxConfig(id: string, tenantId: string) {
 
     revalidatePath('/admin/mailboxes');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting mailbox config:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

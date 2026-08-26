@@ -9,6 +9,8 @@ services:
     environment:
       - HOSTNAME=0.0.0.0
       - PORT=3000
+      # Must match volume ./data:/app/prisma/data (Prisma file: URLs are relative to prisma/)
+      - DATABASE_URL=file:./data/dev.db
     volumes:
       - ./data:/app/prisma/data # Persistente SQLite DB
     networks:
@@ -25,15 +27,6 @@ services:
       - veladesk-app
     networks:
       - veladesk-network
-
-  watchtower:
-    container_name: veladesk-updater
-    image: containrrr/watchtower
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 3600 --cleanup
-    # Watchtower prüft jede Stunde auf neue Images bei GitHub
 
 networks:
   veladesk-network:

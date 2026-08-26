@@ -1,6 +1,7 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Macro } from '@prisma/client';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 const prisma = new PrismaClient();
@@ -11,19 +12,19 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
-export async function getMacros(tenantId: string): Promise<ApiResponse<any>> {
+export async function getMacros(tenantId: string): Promise<ApiResponse<Macro[]>> {
   try {
     const macros = await prisma.macro.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' }
     });
     return { success: true, data: macros, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
-export async function createMacro(data: { tenantId: string; title: string; body: string }): Promise<ApiResponse<any>> {
+export async function createMacro(data: { tenantId: string; title: string; body: string }): Promise<ApiResponse<Macro>> {
   try {
     const macro = await prisma.macro.create({
       data: {
@@ -34,12 +35,12 @@ export async function createMacro(data: { tenantId: string; title: string; body:
     });
     revalidatePath('/admin/macros'); // or wherever the admin view might be
     return { success: true, data: macro, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
-export async function updateMacro(id: string, tenantId: string, data: { title: string; body: string }): Promise<ApiResponse<any>> {
+export async function updateMacro(id: string, tenantId: string, data: { title: string; body: string }): Promise<ApiResponse<{ count: number }>> {
   try {
     const macro = await prisma.macro.updateMany({
       where: { 
@@ -58,12 +59,12 @@ export async function updateMacro(id: string, tenantId: string, data: { title: s
 
     revalidatePath('/admin/macros');
     return { success: true, data: macro, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
-export async function deleteMacro(id: string, tenantId: string): Promise<ApiResponse<any>> {
+export async function deleteMacro(id: string, tenantId: string): Promise<ApiResponse<null>> {
   try {
     // Check existence & tenancy first since deleteMany doesn't return the deleted object
     const macro = await prisma.macro.findFirst({
@@ -83,7 +84,7 @@ export async function deleteMacro(id: string, tenantId: string): Promise<ApiResp
     
     revalidatePath('/admin/macros');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

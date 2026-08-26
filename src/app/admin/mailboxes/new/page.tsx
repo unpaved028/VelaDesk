@@ -26,6 +26,7 @@ import {
   Monitor,
   Check
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 type SetupType = 'auto' | 'manual' | null;
@@ -357,7 +358,21 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
 /**
  * SUB-COMPONENTS
  */
-const SelectionCard = ({ title, description, icon: Icon, color, label, onClick }: any) => (
+const SelectionCard = ({
+  title,
+  description,
+  icon: Icon,
+  color,
+  label,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  color: string;
+  label?: string;
+  onClick: () => void;
+}) => (
   <button 
     onClick={onClick}
     className="group relative flex flex-col items-start p-8 bg-white dark:bg-[#12181b] rounded-[32px] border border-surface-container dark:border-white/5 hover:border-primary transition-all text-left shadow-sm hover:shadow-2xl hover:shadow-primary/5 active:scale-95"
@@ -381,14 +396,28 @@ const SelectionCard = ({ title, description, icon: Icon, color, label, onClick }
   </button>
 );
 
-const MiniGuideItem = ({ icon: Icon, text }: any) => (
+const MiniGuideItem = ({ icon: Icon, text }: { icon: LucideIcon; text: string }) => (
   <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low dark:bg-white/[0.02] border border-surface-container dark:border-white/5">
      <Icon className="w-4 h-4 text-on-surface-variant/40" />
      <span className="text-[12px] font-medium text-on-surface-variant dark:text-on-surface/60">{text}</span>
   </div>
 );
 
-const Input = ({ field, value, placeholder, icon: Icon, type = 'text', onChange }: any) => (
+const Input = ({
+  field,
+  value,
+  placeholder,
+  icon: Icon,
+  type = 'text',
+  onChange,
+}: {
+  field: string;
+  value: string;
+  placeholder: string;
+  icon: LucideIcon;
+  type?: string;
+  onChange: (value: string) => void;
+}) => (
   <div className="space-y-2">
      <label className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-2">
         <Icon className="w-3.5 h-3.5" />

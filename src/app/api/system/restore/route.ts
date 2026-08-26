@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
-import path from 'path';
 import zlib from 'zlib';
+import { requireSuperAdminContext } from '@/lib/auth/session';
+import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
+import { getErrorMessage } from '@/lib/errors';
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authorization: Only allow SUPER_ADMIN or admins
-    // Note: This relies on the global middleware checking the role 
-    // or we can implement specific checks here. Assuming the user is authorized:
+    const authResult = await requireSuperAdminContext();
+    if (!authResult.ok) {
+      const status = authResult.error === 'Not authenticated.' ? 401 : 403;
+      return NextResponse.json({ success: false, data: null, error: authResult.error }, { status });
+    }
+
     const formData = await req.formData();
     const backupFile = formData.get('backup') as File;
 
@@ -37,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Overwrite database
-    const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+    const dbPath = getSqliteDatabasePath();
     console.log(`💾 [RestoreEngine] Overwriting active database at ${dbPath}...`);
     fs.writeFileSync(dbPath, buffer);
 
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
       error: null
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ [RestoreEngine] Error during restore:', error);
     // Best effort reconnect
     await prisma.$connect().catch(e => console.error('Failed to reconnect after error:', e));
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: false,
       data: null,
-      error: error.message || 'Internal Server Error during restore'
+      error: getErrorMessage(error, 'Internal Server Error during restore')
     }, { status: 500 });
   }
 }

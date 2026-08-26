@@ -1,6 +1,7 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 const prisma = new PrismaClient();
@@ -17,8 +18,8 @@ export async function getTenants() {
       orderBy: { createdAt: 'desc' }
     });
     return { success: true, data: tenants, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -43,8 +44,8 @@ export async function createTenant(data: {
     });
     revalidatePath('/admin/tenants');
     return { success: true, data: tenant, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -65,8 +66,8 @@ export async function updateTenant(id: string, data: {
     });
     revalidatePath('/admin/tenants');
     return { success: true, data: tenant, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -77,7 +78,7 @@ export async function deleteTenant(id: string) {
     });
     revalidatePath('/admin/tenants');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

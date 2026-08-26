@@ -38,6 +38,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
   const [workspaceId, setWorkspaceId] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
+  const [mailboxAddress, setMailboxAddress] = useState('');
   const [msTenantId, setMsTenantId] = useState('');
   const [showSecret, setShowSecret] = useState(false);
 
@@ -49,6 +50,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
     setWorkspaceId('');
     setClientId('');
     setClientSecret('');
+    setMailboxAddress('');
     setMsTenantId('');
     setShowSecret(false);
     setError('');
@@ -56,7 +58,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!workspaceId || !clientId || !clientSecret || !msTenantId) {
+    if (!workspaceId || !mailboxAddress || !clientId || !clientSecret || !msTenantId) {
       setError('All fields are required for a new mailbox configuration.');
       return;
     }
@@ -75,6 +77,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
     const payload: MailboxPayload = {
       workspaceId,
       tenantId: selectedWorkspace.tenantId,
+      mailboxAddress,
       clientId,
       clientSecret,
       msTenantId,
@@ -152,6 +155,18 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
               {availableWorkspaces.length === 0 && (
                 <p className="text-xs text-on-surface-variant dark:text-gray-500 mt-1 italic">All workspaces already have a mailbox configured.</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-on-surface dark:text-gray-300 mb-1">Shared Mailbox Address *</label>
+              <input
+                type="email"
+                value={mailboxAddress}
+                onChange={e => setMailboxAddress(e.target.value)}
+                placeholder="support@contoso.com"
+                className={baseInputStyle}
+                required
+              />
             </div>
 
             <div>

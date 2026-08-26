@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { APP_VERSION, isNewer } from '@/lib/appVersion';
+import { isAdminPortalRole, isDevAuthBypassEnabled, isStaffRole } from '@/lib/auth/roles';
 
 /**
  * Edge Middleware — runs before every matched route.
  *
  * Three protection layers:
  * 1. /setup interceptor → Redirects uninitialized systems to setup wizard
- * 2. /admin/* → Requires SUPER_ADMIN role (existing)
- * 3. /portal/* → Requires valid portal session JWT (v0.8.3)
+ * 2. /admin/* → Requires SUPER_ADMIN or ADMIN (JWT session role)
+ * 3. / and /tickets → Requires authenticated staff session
+ * 4. /portal/* → Requires valid portal session JWT (v0.8.3)
  *
  * NOTE: Next.js Edge Middleware cannot use Node.js `crypto` module directly.
  * We perform a lightweight structural + expiry check here. The full HMAC
@@ -17,22 +20,8 @@ import type { NextRequest } from 'next/server';
  * layer does the cryptographic verification.
  */
 
-import pkg from '../package.json';
-
 const SESSION_COOKIE_NAME = 'VELADESK_portal_session';
-const CODE_VERSION = pkg.version;
-
-function isNewer(codeVer: string, dbVer: string) {
-  const c = codeVer.split('.').map(Number);
-  const d = dbVer.split('.').map(Number);
-  for (let i = 0; i < Math.max(c.length, d.length); i++) {
-    const cv = c[i] || 0;
-    const dv = d[i] || 0;
-    if (cv > dv) return true;
-    if (cv < dv) return false;
-  }
-  return false;
-}
+const CODE_VERSION = APP_VERSION;
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -90,19 +79,50 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  const secureCookie = request.cookies.get('__Secure-authjs.session-token')?.value;
+  const devCookie = request.cookies.get('authjs.session-token')?.value;
+  const hasNextAuthSession = !!secureCookie || !!devCookie;
+  const bypass = isDevAuthBypassEnabled(request.cookies.get('DEV_BYPASS_AUTH')?.value);
+
+  // ─── Agent Workspace Protection ──────────────────────────────────
+  const isAgentApp = path === '/' || path.startsWith('/tickets');
+  if (isAgentApp && !bypass) {
+    if (!hasNextAuthSession) {
+      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    }
+    try {
+      const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+        headers: { cookie: request.headers.get('cookie') || '' },
+      });
+      const session = await sessionRes.json() as { user?: { role?: string } };
+      if (!isStaffRole(session?.user?.role)) {
+        return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+      }
+    } catch (error) {
+      console.error('[Middleware] Agent role check failed:', error);
+      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    }
+  }
+
   // ─── Admin Route Protection ───────────────────────────────────────
   if (path.startsWith('/admin')) {
-    // Basic protection using the NextAuth session cookie
-    // Auth.js edge session cookies are named depending on secure/non-secure environment
-    const secureCookie = request.cookies.get('__Secure-authjs.session-token')?.value;
-    const devCookie = request.cookies.get('authjs.session-token')?.value;
-    const hasNextAuthSession = !!secureCookie || !!devCookie;
-
-    const bypass = request.cookies.get('DEV_BYPASS_AUTH')?.value === 'true';
-
     if (!bypass && !hasNextAuthSession) {
-      // NOTE: Unauthenticated users are redirected to login/api
       return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    }
+
+    if (!bypass && hasNextAuthSession) {
+      try {
+        const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+          headers: { cookie: request.headers.get('cookie') || '' },
+        });
+        const session = await sessionRes.json() as { user?: { role?: string } };
+        if (!isAdminPortalRole(session?.user?.role)) {
+          return NextResponse.redirect(new URL('/tickets', request.url));
+        }
+      } catch (error) {
+        console.error('[Middleware] Admin role check failed:', error);
+        return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+      }
     }
 
     // ─── Update Interceptor (Task 0.15.2) ─────────────────────────
@@ -118,7 +138,7 @@ export async function middleware(request: NextRequest) {
         const versionRes = await fetch(new URL('/api/system/version', request.url));
         if (versionRes.ok) {
           const { data } = await versionRes.json();
-          const dbVersion = data?.appVersion || '0.1.0';
+          const dbVersion = data?.appVersion || APP_VERSION;
           
           if (isNewer(CODE_VERSION, dbVersion)) {
             // We need to check if user is admin
@@ -169,7 +189,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-veladesk-pathname', path);
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 /**

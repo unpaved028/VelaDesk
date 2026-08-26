@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 import { Role } from '@prisma/client';
 
@@ -16,7 +17,7 @@ export async function getAgents() {
     const agents = await prisma.user.findMany({
       where: {
         role: {
-          in: ['ADMIN', 'AGENT']
+          in: ['SUPER_ADMIN', 'ADMIN', 'AGENT']
         }
       },
       orderBy: { name: 'asc' },
@@ -25,9 +26,9 @@ export async function getAgents() {
       }
     });
     return { success: true, data: agents, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching agents:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -65,9 +66,9 @@ export async function createAgent(data: AgentPayload) {
 
     revalidatePath('/admin/agents');
     return { success: true, data: newAgent, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating agent:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -78,7 +79,7 @@ export async function deleteAgent(id: string, tenantId: string) {
     });
     revalidatePath('/admin/agents');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting agent:', error);
     return { success: false, data: null, error: 'Cannot delete agent. They might have assigned tickets.' };
   }

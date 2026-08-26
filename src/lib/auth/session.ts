@@ -1,0 +1,75 @@
+import { auth } from '@/auth';
+import {
+  isAdminPortalRole,
+  isStaffRole,
+  isSuperAdminRole,
+  type StaffRole,
+} from '@/lib/auth/roles';
+
+export {
+  isAdminPortalRole,
+  isDevAuthBypassEnabled,
+  isStaffRole,
+  isSuperAdminRole,
+} from '@/lib/auth/roles';
+
+/**
+ * Session helpers for agent/admin Server Actions and API routes.
+ *
+ * tenantId and userId MUST come from the Auth.js session (SOP-02).
+ * Never fall back to prisma.tenant.findFirst() or a synthetic demo agent.
+ */
+
+export interface AgentContext {
+  userId: string;
+  tenantId: string;
+  role: StaffRole;
+  email: string;
+}
+
+export async function requireAgentContext(): Promise<
+  { ok: true; ctx: AgentContext } | { ok: false; error: string }
+> {
+  const session = await auth();
+  const user = session?.user;
+
+  if (!user?.id || !user.tenantId) {
+    return { ok: false, error: 'Not authenticated.' };
+  }
+
+  if (!isStaffRole(user.role)) {
+    return { ok: false, error: 'Forbidden.' };
+  }
+
+  return {
+    ok: true,
+    ctx: {
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      email: user.email ?? '',
+    },
+  };
+}
+
+export async function requireAdminContext(): Promise<
+  { ok: true; ctx: AgentContext } | { ok: false; error: string }
+> {
+  const result = await requireAgentContext();
+  if (!result.ok) return result;
+  if (!isAdminPortalRole(result.ctx.role)) {
+    return { ok: false, error: 'Forbidden: admin role required.' };
+  }
+  return result;
+}
+
+export async function requireSuperAdminContext(): Promise<
+  { ok: true; ctx: AgentContext } | { ok: false; error: string }
+> {
+  const result = await requireAgentContext();
+  if (!result.ok) return result;
+  if (!isSuperAdminRole(result.ctx.role)) {
+    return { ok: false, error: 'Forbidden: SUPER_ADMIN role required.' };
+  }
+  return result;
+}

@@ -4,11 +4,38 @@ import React, { useState } from 'react';
 import { Plus, Trash2, Tag, Clock } from 'lucide-react';
 import { CategoryPayload, SLAPayload, createCategory, deleteCategory, createSLA, deleteSLA } from '../../lib/actions/taxonomyActions';
 
+interface TenantOption {
+  id: string;
+  name: string;
+}
+
+interface WorkspaceOption {
+  id: string;
+  name: string;
+  tenantId: string;
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  tenantId: string;
+  workspace?: { name: string } | null;
+}
+
+interface SLARow {
+  id: string;
+  name: string;
+  tenantId: string;
+  responseHours: number;
+  resolutionHours: number;
+  workspace?: { name: string } | null;
+}
+
 interface TaxonomyManagerProps {
-  initialCategories: any[];
-  initialSLAs: any[];
-  tenants: any[];
-  workspaces: any[];
+  initialCategories: CategoryRow[];
+  initialSLAs: SLARow[];
+  tenants: TenantOption[];
+  workspaces: WorkspaceOption[];
 }
 
 export const TaxonomyManager = ({ initialCategories, initialSLAs, tenants, workspaces }: TaxonomyManagerProps) => {

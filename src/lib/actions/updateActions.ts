@@ -2,29 +2,56 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import path from 'path';
 import fs from 'fs';
+import { APP_VERSION } from '@/lib/appVersion';
+import { requireAdminContext } from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
+import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
+import { getErrorMessage } from '@/lib/errors';
 import { BackupWorker } from '../services/backupWorker';
-import { getUpdateStatus } from '../services/updateService';
+import { getUpdateStatus, type UpdateStatus } from '../services/updateService';
 import { ApiResponse } from './systemConfig';
 
 const execAsync = promisify(exec);
 
-export async function checkUpdatesAction(): Promise<ApiResponse<any>> {
+export async function checkUpdatesAction(): Promise<ApiResponse<UpdateStatus>> {
   try {
     const status = await getUpdateStatus();
     return { success: true, data: status, error: null };
-  } catch (error: any) {
-    return { success: false, data: null, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
+  }
+}
+
+/**
+ * Persist package.json version onto SystemConfig so middleware stops
+ * sending admins to /admin/update-wizard after a code bump.
+ */
+export async function acknowledgeAppVersion(): Promise<ApiResponse<{ appVersion: string }>> {
+  try {
+    const auth = await requireAdminContext();
+    if (!auth.ok) {
+      return { success: false, data: null, error: auth.error };
+    }
+
+    const config = await prisma.systemConfig.upsert({
+      where: { id: 'global' },
+      update: { appVersion: APP_VERSION },
+      create: { id: 'global', appVersion: APP_VERSION },
+    });
+
+    return { success: true, data: { appVersion: config.appVersion }, error: null };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
 export async function triggerAppUpdate(): Promise<ApiResponse<string>> {
   try {
     // 1. Create a local backup of the database
-    const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+    const dbPath = getSqliteDatabasePath();
     if (fs.existsSync(dbPath)) {
-      const backupPath = path.join(process.cwd(), 'prisma', `dev.backup-${Date.now()}.db`);
+      const backupPath = `${dbPath}.backup-${Date.now()}`;
       fs.copyFileSync(dbPath, backupPath);
       console.log(`[Update Engine] Local database backup created at ${backupPath}`);
     }
@@ -56,8 +83,8 @@ export async function triggerAppUpdate(): Promise<ApiResponse<string>> {
       data: 'Update initiated successfully. System will restart in a few seconds.', 
       error: null 
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Update Engine] Update failed:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { APP_VERSION } from '@/lib/appVersion';
 
 const REPO_OWNER = 'unpaved028';
 const REPO_NAME = 'VelaDesk';
@@ -12,7 +13,7 @@ export interface UpdateStatus {
 }
 
 export const getUpdateStatus = async (): Promise<UpdateStatus> => {
-  let currentVersion = '0.1.0'; // Default
+  let currentVersion = APP_VERSION;
   
   try {
     const pkgPath = path.join(process.cwd(), 'package.json');

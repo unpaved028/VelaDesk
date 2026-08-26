@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 export interface ApiResponse<T> {
@@ -9,7 +10,7 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
-export async function seedBestPractices(tenantId: string): Promise<ApiResponse<any>> {
+export async function seedBestPractices(tenantId: string): Promise<ApiResponse<{ workspace: { id: string } }>> {
   if (!tenantId) {
     return { success: false, data: null, error: "tenantId is strictly required for seeding." };
   }
@@ -84,8 +85,8 @@ export async function seedBestPractices(tenantId: string): Promise<ApiResponse<a
     revalidatePath('/admin');
     
     return { success: true, data: { workspace: defaultWorkspace }, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in seedBestPractices:", error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

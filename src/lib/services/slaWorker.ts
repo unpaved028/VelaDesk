@@ -63,7 +63,7 @@ export const SlaWorker = {
 
     // System actor for automated audit events
     const systemUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
+      where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
     });
 
     if (!systemUser) {

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
-import path from 'path';
 import zlib from 'zlib';
 import { PrismaClient } from '@prisma/client';
 import { ApiResponse } from '@/types/api';
+import { requireSuperAdminContext } from '@/lib/auth/session';
+import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
+import { getErrorMessage } from '@/lib/errors';
 
 // Create a singleton prisma instance if possible or reuse existing.
 // In Next.js, we often use a global prisma instance, but here we explicitly
@@ -17,6 +19,16 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
+    const authResult = await requireSuperAdminContext();
+    if (!authResult.ok) {
+      const status = authResult.error === 'Not authenticated.' ? 401 : 403;
+      return NextResponse.json({
+        success: false,
+        data: null,
+        error: authResult.error
+      }, { status });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     
@@ -31,8 +43,8 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-    const backupDbPath = path.join(process.cwd(), 'prisma', `dev-backup-${Date.now()}.db`);
+    const dbPath = getSqliteDatabasePath();
+    const backupDbPath = `${dbPath}.bak-${Date.now()}`;
 
     // 1. Disconnect Prisma to release file locks on Windows
     await prisma.$disconnect();
@@ -76,7 +88,7 @@ export async function POST(req: Request) {
       error: null
     } as ApiResponse<{ message: string }>, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ [Restore Engine] Restore failed:', error);
     
     // Try to ensure Prisma is connected even if an error occurs
@@ -85,7 +97,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: false,
       data: null,
-      error: error.message || "Failed to restore database from backup"
+      error: getErrorMessage(error, "Failed to restore database from backup")
     } as ApiResponse<any>, { status: 500 });
   }
 }

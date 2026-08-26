@@ -2,6 +2,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { matchEmailPattern } from '@/lib/routing/emailPattern';
 
 const prisma = new PrismaClient();
 
@@ -160,29 +161,4 @@ export async function resolveWorkspaceForEmail(
   });
 
   return config?.defaultWorkspaceId ?? null;
-}
-
-// Simple glob-style pattern matcher for email routing
-// Supports: *@domain.com, user@*, exact matches
-function matchEmailPattern(pattern: string, email: string): boolean {
-  const lowerPattern = pattern.toLowerCase().trim();
-  const lowerEmail = email.toLowerCase().trim();
-
-  // Exact match
-  if (lowerPattern === lowerEmail) return true;
-
-  // Convert glob pattern to regex:
-  // - Escape regex special chars (except *)
-  // - Replace * with .*
-  const regexStr = lowerPattern
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
-    .replace(/\*/g, '.*');                    // Convert glob * to regex .*
-
-  try {
-    const regex = new RegExp(`^${regexStr}$`);
-    return regex.test(lowerEmail);
-  } catch {
-    // Invalid pattern — skip silently, don't crash the routing engine
-    return false;
-  }
 }

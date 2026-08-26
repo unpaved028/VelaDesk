@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 export interface CategoryPayload {
@@ -32,9 +33,9 @@ export async function getCategories() {
       }
     });
     return { success: true, data: categories, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching categories:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -55,9 +56,9 @@ export async function createCategory(data: CategoryPayload) {
 
     revalidatePath('/admin/taxonomy');
     return { success: true, data: category, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating category:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -68,7 +69,7 @@ export async function deleteCategory(id: string, tenantId: string) {
     });
     revalidatePath('/admin/taxonomy');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting category:', error);
     return { success: false, data: null, error: 'Cannot delete category. Ensure no tickets are attached.' };
   }
@@ -85,9 +86,9 @@ export async function getSLAs() {
       }
     });
     return { success: true, data: slas, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching SLAs:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -108,9 +109,9 @@ export async function createSLA(data: SLAPayload) {
 
     revalidatePath('/admin/taxonomy');
     return { success: true, data: sla, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating SLA:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }
 
@@ -121,8 +122,8 @@ export async function deleteSLA(id: string, tenantId: string) {
     });
     revalidatePath('/admin/taxonomy');
     return { success: true, data: null, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting SLA:', error);
-    return { success: false, data: null, error: error.message };
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

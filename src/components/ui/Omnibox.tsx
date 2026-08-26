@@ -10,8 +10,10 @@ import {
   CornerDownLeft,
   LayoutDashboard,
   Users,
-  Box
+  Box,
+  type LucideIcon
 } from 'lucide-react';
+import { APP_VERSION } from '@/lib/appVersion';
 
 /**
  * Omnibox (Cmd+K) Component
@@ -101,7 +103,7 @@ export const Omnibox = () => {
               <span className="flex items-center gap-1.5"><X className="w-3.5 h-3.5 opacity-50" /> Schließen</span>
            </div>
            <div className="font-semibold tracking-tight">
-              VelaDesk Omnibox <span className="text-primary dark:text-white/20">v0.5</span>
+              VelaDesk Omnibox <span className="text-primary dark:text-white/20">v{APP_VERSION}</span>
            </div>
         </div>
       </div>
@@ -110,7 +112,7 @@ export const Omnibox = () => {
 };
 
 interface OmniboxItemProps { 
-  icon: any; 
+  icon: LucideIcon; 
   title: string; 
   subtitle?: string; 
   shortcut?: string; 

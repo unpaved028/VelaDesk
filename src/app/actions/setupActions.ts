@@ -1,6 +1,8 @@
 'use server';
 
+import { APP_VERSION } from '@/lib/appVersion';
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 import { exec } from 'child_process';
@@ -38,7 +40,7 @@ export async function completeFirstRunSetup(payload: SetupPayload): Promise<Setu
     // If the database has never been initialized, this might throw a "table not found" error.
     try {
       const existingAdmin = await prisma.user.findFirst({
-        where: { role: 'ADMIN' },
+        where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
         select: { id: true },
       });
 
@@ -48,8 +50,8 @@ export async function completeFirstRunSetup(payload: SetupPayload): Promise<Setu
           error: 'System is already initialized. Setup cannot be run again.',
         };
       }
-      } catch (dbError: any) {
-      console.log('[completeFirstRunSetup] Database check failed. Attempting to initialize schema...', dbError.message);
+      } catch (dbError: unknown) {
+      console.log('[completeFirstRunSetup] Database check failed. Attempting to initialize schema...', getErrorMessage(dbError));
       try {
         // Automatically push the schema to the database
         await execAsync('npx prisma db push --accept-data-loss');
@@ -58,7 +60,7 @@ export async function completeFirstRunSetup(payload: SetupPayload): Promise<Setu
         // Force Prisma to disconnect so the next query reconnects with the fresh schema
         // This clears any cached error states (like 'Table does not exist') from the previous failed query.
         await prisma.$disconnect();
-      } catch (pushError: any) {
+      } catch (pushError: unknown) {
         console.error('[completeFirstRunSetup] Failed to initialize database schema:', pushError);
         return {
           success: false,
@@ -91,7 +93,7 @@ export async function completeFirstRunSetup(payload: SetupPayload): Promise<Setu
           tenantId: tenant.id,
           email: payload.email.trim().toLowerCase(),
           name: `${payload.firstName.trim()} ${payload.lastName.trim()}`,
-          role: 'ADMIN',
+          role: 'SUPER_ADMIN',
         },
       });
 
@@ -101,11 +103,13 @@ export async function completeFirstRunSetup(payload: SetupPayload): Promise<Setu
         update: {
           baseUrl: payload.baseUrl?.trim() || 'http://localhost:3000',
           systemEmailSender: payload.systemEmail?.trim() || 'noreply@veladesk.local',
+          appVersion: APP_VERSION,
         },
         create: {
           id: 'global',
           baseUrl: payload.baseUrl?.trim() || 'http://localhost:3000',
           systemEmailSender: payload.systemEmail?.trim() || 'noreply@veladesk.local',
+          appVersion: APP_VERSION,
         },
       });
     });

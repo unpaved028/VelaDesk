@@ -156,7 +156,7 @@ export default function ProfilePage() {
   );
 }
 
-function AlertCircle(props: any) {
+function AlertCircle(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

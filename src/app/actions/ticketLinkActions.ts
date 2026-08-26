@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import type { ApiResponse } from '@/types/api';
 import type { LinkedTicket, TicketReference, TicketSearchResult } from '@/types/ticketLink';
+import { requireAgentContext } from '@/lib/auth/session';
 
 /**
  * Searches for tickets that can be linked to the current ticket.
@@ -16,9 +17,9 @@ export async function searchTicketsForLinking(
   query: string
 ): Promise<ApiResponse<TicketSearchResult>> {
   try {
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return { success: false, data: null, error: 'No active tenant found' };
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return { success: false, data: null, error: authResult.error };
+    const { tenantId: currentTenantId } = authResult.ctx;
 
     // Fetch current ticket to exclude its parent and children from search
     const currentTicket = await prisma.ticket.findFirst({
@@ -41,11 +42,12 @@ export async function searchTicketsForLinking(
     const tickets = await prisma.ticket.findMany({
       where: {
         tenantId: currentTenantId,
-        id: { notIn: excludeIds },
-        ...(isNumericQuery
-          ? { id: parseInt(query.trim(), 10) }
-          : { subject: { contains: query.trim() } }
-        ),
+        AND: [
+          { id: { notIn: excludeIds } },
+          isNumericQuery
+            ? { id: parseInt(query.trim(), 10) }
+            : { subject: { contains: query.trim() } },
+        ],
       },
       select: {
         id: true,
@@ -88,9 +90,9 @@ export async function getRelatedTickets(
   ticketId: number
 ): Promise<ApiResponse<LinkedTicket[]>> {
   try {
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return { success: false, data: null, error: 'No active tenant found' };
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return { success: false, data: null, error: authResult.error };
+    const { tenantId: currentTenantId } = authResult.ctx;
 
     const ticket = await prisma.ticket.findFirst({
       where: { id: ticketId, tenantId: currentTenantId },
@@ -157,16 +159,9 @@ export async function linkTickets(
   childTicketId: number
 ): Promise<ApiResponse<boolean>> {
   try {
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return { success: false, data: null, error: 'No active tenant found' };
-
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' } });
-    if (!agent) {
-      agent = await prisma.user.create({
-        data: { tenantId: currentTenantId, email: 'agent@example.com', name: 'Demo Agent', role: 'AGENT' },
-      });
-    }
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return { success: false, data: null, error: authResult.error };
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     // Self-link guard
     if (parentTicketId === childTicketId) {
@@ -241,7 +236,7 @@ export async function linkTickets(
         data: {
           tenantId: currentTenantId,
           ticketId: parentTicketId,
-          userId: agent.id,
+          userId: userId,
           action: 'STATUS_CHANGED', // Reusing closest available EventAction
           oldValue: null,
           newValue: `LINKED_CHILD:#${childTicketId}`,
@@ -251,7 +246,7 @@ export async function linkTickets(
         data: {
           tenantId: currentTenantId,
           ticketId: childTicketId,
-          userId: agent.id,
+          userId: userId,
           action: 'STATUS_CHANGED',
           oldValue: null,
           newValue: `LINKED_PARENT:#${parentTicketId}`,
@@ -277,16 +272,9 @@ export async function unlinkTicket(
   ticketId: number
 ): Promise<ApiResponse<boolean>> {
   try {
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return { success: false, data: null, error: 'No active tenant found' };
-
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' } });
-    if (!agent) {
-      agent = await prisma.user.create({
-        data: { tenantId: currentTenantId, email: 'agent@example.com', name: 'Demo Agent', role: 'AGENT' },
-      });
-    }
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return { success: false, data: null, error: authResult.error };
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     const ticket = await prisma.ticket.findFirst({
       where: { id: ticketId, tenantId: currentTenantId },
@@ -307,7 +295,7 @@ export async function unlinkTicket(
         data: {
           tenantId: currentTenantId,
           ticketId: ticketId,
-          userId: agent.id,
+          userId: userId,
           action: 'STATUS_CHANGED',
           oldValue: `LINKED_PARENT:#${oldParentId}`,
           newValue: null,
@@ -317,7 +305,7 @@ export async function unlinkTicket(
         data: {
           tenantId: currentTenantId,
           ticketId: oldParentId,
-          userId: agent.id,
+          userId: userId,
           action: 'STATUS_CHANGED',
           oldValue: `LINKED_CHILD:#${ticketId}`,
           newValue: null,

@@ -50,17 +50,21 @@ model User {
   tenant          Tenant             @relation(fields: [tenantId], references: [id])
   email           String             @unique
   name            String
-  role            Role               @default(CUSTOMER) // AGENT, ADMIN, CUSTOMER
+  role            Role               @default(CUSTOMER)
   assignedTickets Ticket[]           @relation("AssignedAgent")
   assets          Asset[]
   approvals       Approval[]
   ticketEvents    TicketEvent[]
   articles        KnowledgeArticle[]
+  timeEntries     TimeEntry[]
 
   @@index([tenantId])
 }
 
+// SUPER_ADMIN = instance owner (backup/restore, system). ADMIN = tenant admin (/admin).
+// AGENT = staff workspace. CUSTOMER = portal only. See SOP-05.
 enum Role {
+  SUPER_ADMIN
   ADMIN
   AGENT
   CUSTOMER
@@ -83,6 +87,9 @@ model Ticket {
 
   // ITIL Klassifizierung
   itilType ITILType @default(INCIDENT) // INCIDENT, SERVICE_REQUEST, PROBLEM, CHANGE
+
+  // CAB risk matrix (v1.2.3). Null for non-CHANGE tickets.
+  riskLevel ChangeRisk?
 
   requesterId     String
   assignedAgentId String?
@@ -108,6 +115,7 @@ model Ticket {
   approvals    Approval[]
   ticketEvents TicketEvent[]
   csatRatings  CsatRating[]
+  timeEntries  TimeEntry[]
 
   // ITIL Hierarchie (Parent/Child)
   parentId Int?
@@ -141,6 +149,13 @@ enum ITILType {
   SERVICE_REQUEST
   PROBLEM
   CHANGE
+}
+
+enum ChangeRisk {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 // 5. Konversationen (Posteingang-Logik)
@@ -196,7 +211,7 @@ model Customer {
 // 6. Global System Configuration
 model SystemConfig {
   id                 String  @id @default("global") // Single record for global config
-  appVersion         String  @default("0.1.0") // The current expected DB version
+  appVersion         String  @default("0.1.0") // Written from package.json (APP_VERSION) on setup / update-wizard
   baseUrl            String  @default("http://localhost:3000")
   defaultTimezone    String  @default("UTC")
   systemEmailSender  String  @default("noreply@veladesk.local")
@@ -209,6 +224,9 @@ model SystemConfig {
 
   // Cloudflare Tunnel Configuration
   cloudflareTunnelToken String? // MUST be encrypted via encryptSecret(value, "SYSTEM") — SOP-05
+
+  // Entra ID SSO: true once instance-level Entra credentials are configured.
+  entraIdConfigured Boolean @default(false)
 
   updatedAt DateTime @updatedAt
 }
@@ -351,6 +369,7 @@ enum EventAction {
   SLA_WARNING
   SLA_BREACHED
   CSAT_REQUESTED
+  TICKET_CREATED
 }
 
 // 13. Audit Log (Ticket Events)
@@ -425,4 +444,40 @@ enum ArticleStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+// 16. Time Tracking (v1.5.1) — billable work against a ticket
+model TimeEntry {
+  id              String   @id @default(cuid())
+  tenantId        String
+  ticketId        Int
+  ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  durationMinutes Int
+  isBillable      Boolean  @default(true)
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([userId])
+}
+
+// 17. Outbound Webhooks (v1.4.1)
+// secret MUST be encrypted via encryptSecret(value, tenantId) — SOP-05.
+// events is a comma-separated list of EventAction names (SQLite has no string arrays).
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  url       String
+  events    String
+  secret    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
 }

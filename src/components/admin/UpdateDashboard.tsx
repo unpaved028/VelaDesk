@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCcw, Download, CheckCircle, AlertTriangle, ShieldCheck, Rocket } from 'lucide-react';
 import { checkUpdatesAction, triggerAppUpdate } from '@/lib/actions/updateActions';
+import { APP_VERSION } from '@/lib/appVersion';
 
 export const UpdateDashboard = () => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -11,8 +12,8 @@ export const UpdateDashboard = () => {
   const [status, setStatus] = useState<'idle' | 'checking' | 'ready' | 'updating' | 'finished'>('idle');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
-  const [currentVersion, setCurrentVersion] = useState("0.1.0");
-  const [latestVersion, setLatestVersion] = useState("0.1.0");
+  const [currentVersion, setCurrentVersion] = useState(APP_VERSION);
+  const [latestVersion, setLatestVersion] = useState(APP_VERSION);
   const [hasUpdate, setHasUpdate] = useState(false);
   const [releaseNotes, setReleaseNotes] = useState("");
 

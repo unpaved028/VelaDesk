@@ -5,9 +5,23 @@ import { Plus, Trash2, Users, ShieldAlert, ShieldCheck, Sparkles, Link as LinkIc
 import { AgentPayload, createAgent, deleteAgent } from '../../lib/actions/agentActions';
 import { Role } from '@prisma/client';
 
+interface AgentRow {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  tenantId: string;
+  tenant?: { name: string } | null;
+}
+
+interface TenantOption {
+  id: string;
+  name: string;
+}
+
 interface AgentManagerProps {
-  initialAgents: any[];
-  tenants: any[];
+  initialAgents: AgentRow[];
+  tenants: TenantOption[];
 }
 
 export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {

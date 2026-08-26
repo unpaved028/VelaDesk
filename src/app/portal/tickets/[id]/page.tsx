@@ -57,7 +57,7 @@ export default async function CustomerTicketPage({
     status: ticket.status as TicketStatus,
     createdAt: new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(ticket.createdAt),
     workspace: ticket.workspace.name,
-    messages: ticket.messages.map((m: any) => ({
+    messages: ticket.messages.map((m) => ({
       id: m.id,
       author: m.authorId === session.email ? 'Ich' : 'Support',
       type: m.authorId === session.email ? 'customer' : 'agent',

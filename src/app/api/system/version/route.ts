@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { APP_VERSION } from '@/lib/appVersion';
 import { prisma } from '@/lib/db/prisma';
 
 // Force Node.js runtime
@@ -14,7 +15,7 @@ export async function GET() {
     });
     return NextResponse.json({
       success: true,
-      data: { appVersion: config?.appVersion || '0.1.0' },
+      data: { appVersion: config?.appVersion || APP_VERSION },
       error: null
     }, { status: 200 });
   } catch (error) {

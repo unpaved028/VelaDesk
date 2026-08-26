@@ -8,6 +8,8 @@ async function main() {
   
   // Mandatory order for cleanup (child records first)
   await prisma.message.deleteMany();
+  await prisma.timeEntry.deleteMany();
+  await prisma.webhookEndpoint.deleteMany();
   await prisma.ticket.deleteMany();
   await prisma.ticketCategory.deleteMany();
   await prisma.sLA_Policy.deleteMany();
@@ -96,7 +98,7 @@ async function main() {
       tenantId: tenant.id,
       email: 'admin@acme.com',
       name: 'System Admin',
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
     },
   });
 

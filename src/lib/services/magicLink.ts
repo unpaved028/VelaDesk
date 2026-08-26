@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { evaluateMagicLinkRecord } from '@/lib/auth/magicLinkRules';
 import { prisma } from '@/lib/db/prisma';
 import { MagicLinkGenerationResult, MagicLinkValidationResult, MagicLinkConfig } from '@/types/magicLink';
 
@@ -101,19 +102,9 @@ export async function validateAndConsumeToken(token: string): Promise<MagicLinkV
     where: { token },
   });
 
-  // Check 1: Token exists
-  if (!record) {
-    return { valid: false, email: null, tenantId: null, reason: 'Token not found or invalid.' };
-  }
-
-  // Check 2: Token not already consumed (single-use enforcement)
-  if (record.usedAt !== null) {
-    return { valid: false, email: null, tenantId: null, reason: 'Token has already been used.' };
-  }
-
-  // Check 3: Token not expired
-  if (record.expiresAt < new Date()) {
-    return { valid: false, email: null, tenantId: null, reason: 'Token has expired.' };
+  const check = evaluateMagicLinkRecord(record);
+  if (!check.ok || !record) {
+    return { valid: false, email: null, tenantId: null, reason: check.ok ? 'Token not found or invalid.' : check.reason };
   }
 
   // All checks passed — atomically consume the token

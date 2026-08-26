@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { ApiResponse } from '@/types/api';
 import { createErrorResponse } from '@/lib/validation/schemas';
+import { requireAgentContext } from '@/lib/auth/session';
 
 export interface GlobalSearchResult {
   type: 'TICKET' | 'USER' | 'ASSET';
@@ -15,7 +16,6 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
-    const tenantIdParam = searchParams.get('tenantId');
 
     if (!query || query.trim().length < 2) {
       return NextResponse.json<ApiResponse<GlobalSearchResult[]>>(
@@ -26,18 +26,14 @@ export async function GET(request: Request) {
 
     const searchTerm = query.trim();
 
-    // Replicate authentication context logic (simulated for MVP)
-    let currentTenantId = tenantIdParam;
-    if (!currentTenantId) {
-      const firstTenant = await prisma.tenant.findFirst();
-      if (!firstTenant) {
-        return NextResponse.json<ApiResponse<null>>(
-          createErrorResponse('No active tenant found'),
-          { status: 400 }
-        );
-      }
-      currentTenantId = firstTenant.id;
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) {
+      return NextResponse.json<ApiResponse<null>>(
+        createErrorResponse(authResult.error),
+        { status: 401 }
+      );
     }
+    const currentTenantId = authResult.ctx.tenantId;
 
     // Check if the query is numeric (to search by Ticket ID)
     const isNumeric = /^\d+$/.test(searchTerm);

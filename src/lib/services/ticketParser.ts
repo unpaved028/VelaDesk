@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
+import { matchEmailPattern } from '@/lib/routing/emailPattern';
 import { GraphEmail } from '@/types/graph';
 
 // --- Routing Result ---
@@ -133,24 +134,3 @@ function buildTags(routing: RoutingResult): string {
   return tags.join(',');
 }
 
-// --- Glob-style Pattern Matcher ---
-// Supports: *@domain.com, user@*, exact matches
-// Duplicated from routingActions.ts to keep this module independent of 'use server'
-function matchEmailPattern(pattern: string, email: string): boolean {
-  const lowerPattern = pattern.toLowerCase().trim();
-  const lowerEmail = email.toLowerCase().trim();
-
-  if (lowerPattern === lowerEmail) return true;
-
-  // Convert glob * to regex .*  (escape all other special chars first)
-  const regexStr = lowerPattern
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-    .replace(/\*/g, '.*');
-
-  try {
-    const regex = new RegExp(`^${regexStr}$`);
-    return regex.test(lowerEmail);
-  } catch {
-    return false;
-  }
-}

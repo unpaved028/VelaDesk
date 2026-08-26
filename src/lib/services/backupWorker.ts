@@ -1,9 +1,9 @@
 import fs from 'fs';
-import path from 'path';
 import zlib from 'zlib';
 import { PrismaClient } from '@prisma/client';
 import { GraphApiHelper } from '../api/graph';
 import { decryptSecret } from './encryption';
+import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
 
 const prisma = new PrismaClient();
 
@@ -35,7 +35,7 @@ export class BackupWorker {
       }
 
       // 3. Compress the database
-      const dbPath = path.join(process.cwd(), 'prisma', 'dev.db'); // Note: adjust if in production!
+      const dbPath = getSqliteDatabasePath();
       if (!fs.existsSync(dbPath)) {
         throw new Error(`Database not found at ${dbPath}`);
       }
@@ -66,7 +66,7 @@ export class BackupWorker {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/gzip'
         },
-        body: compressedBuffer
+        body: new Uint8Array(compressedBuffer),
       });
 
       if (!response.ok) {

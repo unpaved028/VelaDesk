@@ -1,21 +1,25 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
+import { requireAgentContext } from '@/lib/auth/session';
 
 /**
  * AgentLayout wraps all internal agent routes with the GlobalSidebar.
- * It provides the necessary left margin to accommodate the fixed sidebar.
+ * Session is required here as defense-in-depth; middleware already checks staff role (H1).
  */
-export default function AgentLayout({
+export default async function AgentLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const authResult = await requireAgentContext();
+  if (!authResult.ok) {
+    redirect('/api/auth/signin');
+  }
+
   return (
     <>
-      {/* 1. Global Sidebar (Fixed to the left) */}
       <GlobalSidebar />
-      
-      {/* 2. Main Content Wrapper (With margin for the sidebar) */}
       <div className="ml-[64px] flex flex-1 h-screen overflow-hidden min-h-0 w-full">
         {children}
       </div>

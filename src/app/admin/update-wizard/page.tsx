@@ -10,20 +10,29 @@ import {
   Database, 
   Sparkles,
   ArrowRight,
-  Info
+  Info,
+  type LucideIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { APP_VERSION } from '@/lib/appVersion';
+import { acknowledgeAppVersion } from '@/lib/actions/updateActions';
 
 export default function UpdateWizardPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState('');
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     setIsFinishing(true);
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 1500);
+    setFinishError('');
+    const result = await acknowledgeAppVersion();
+    if (!result.success) {
+      setFinishError(result.error || 'Could not record the new version.');
+      setIsFinishing(false);
+      return;
+    }
+    router.push('/tickets');
   };
 
   const baseInputStyle = "w-full p-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all";
@@ -54,7 +63,7 @@ export default function UpdateWizardPage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <header className="mb-10 text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
-                <Sparkles className="w-3 h-3" /> System Update v0.15.0
+                <Sparkles className="w-3 h-3" /> System Update v{APP_VERSION}
               </div>
               <h1 className="text-4xl font-black bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent mb-4">
                 What's New in This Release
@@ -66,19 +75,19 @@ export default function UpdateWizardPage() {
 
             <div className="grid gap-4 mb-10">
               <ChangeItem 
-                icon={Database} 
-                title="Automated DB Migrations" 
-                description="Zero-touch database updates. Your schema is now automatically synchronized on system startup."
-              />
-              <ChangeItem 
                 icon={ShieldCheck} 
-                title="Microsoft Entra ID Login" 
-                description="Enhanced security for your agents. Single Sign-On (SSO) via your organization's Microsoft account."
+                title="Session & RBAC" 
+                description="Agent routes require a staff session. Backup/Restore are SUPER_ADMIN-only. DEV_BYPASS_AUTH is ignored in production."
               />
               <ChangeItem 
                 icon={Zap} 
-                title="Magic Invite Links" 
-                description="Onboard experts in seconds. Generate temporary links for verified organization members."
+                title="Background Jobs" 
+                description="SLA checks, mailbox sync, and scheduled backups start with the Node server — no extra process to manage."
+              />
+              <ChangeItem 
+                icon={Database} 
+                title="SQLite Path & Tests" 
+                description="Docker persists the database under prisma/data. Core helpers (roles, routing, magic links) now have unit tests."
               />
             </div>
 
@@ -137,6 +146,10 @@ export default function UpdateWizardPage() {
               </div>
             </div>
 
+            {finishError && (
+              <p className="mb-4 text-xs text-error font-medium">{finishError}</p>
+            )}
+
             <button 
               onClick={handleFinish}
               disabled={isFinishing}
@@ -160,7 +173,7 @@ export default function UpdateWizardPage() {
   );
 }
 
-const ChangeItem = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
+const ChangeItem = ({ icon: Icon, title, description }: { icon: LucideIcon, title: string, description: string }) => (
   <div className="group p-5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-2xl transition-all cursor-default">
     <div className="flex items-start gap-4">
       <div className="p-2.5 bg-white/5 rounded-xl group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">

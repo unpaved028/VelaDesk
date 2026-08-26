@@ -3,18 +3,13 @@
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { AssetIdSchema, CreateAssetSchema, UpdateAssetSchema, createErrorResponse } from '@/lib/validation/schemas';
-
-// Mock function for simulating auth for MVP. 
-// ALWAYS filter by tenantId!
-async function getCurrentTenantId() {
-  const firstTenant = await prisma.tenant.findFirst();
-  return firstTenant?.id || null;
-}
+import { requireAgentContext } from '@/lib/auth/session';
 
 export async function createAsset(data: unknown) {
   try {
-    const tenantId = await getCurrentTenantId();
-    if (!tenantId) return createErrorResponse('No active tenant found');
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const tenantId = authResult.ctx.tenantId;
 
     const validation = CreateAssetSchema.safeParse(data);
     if (!validation.success) {
@@ -41,8 +36,9 @@ export async function createAsset(data: unknown) {
 
 export async function getAssets() {
   try {
-    const tenantId = await getCurrentTenantId();
-    if (!tenantId) return createErrorResponse('No active tenant found');
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const tenantId = authResult.ctx.tenantId;
 
     // Golden Rule: ALWAYS filter by tenantId
     const assets = await prisma.asset.findMany({
@@ -64,8 +60,9 @@ export async function getAssets() {
 
 export async function updateAsset(data: unknown) {
   try {
-    const tenantId = await getCurrentTenantId();
-    if (!tenantId) return createErrorResponse('No active tenant found');
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const tenantId = authResult.ctx.tenantId;
 
     const validation = UpdateAssetSchema.safeParse(data);
     if (!validation.success) {
@@ -97,8 +94,9 @@ export async function updateAsset(data: unknown) {
 
 export async function deleteAsset(id: unknown) {
   try {
-    const tenantId = await getCurrentTenantId();
-    if (!tenantId) return createErrorResponse('No active tenant found');
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const tenantId = authResult.ctx.tenantId;
 
     const validation = AssetIdSchema.safeParse(id);
     if (!validation.success) {

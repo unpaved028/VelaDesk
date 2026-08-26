@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Shield, Network, Globe, Lock, ExternalLink, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Shield, Network, Globe, Lock, ExternalLink, RefreshCw, AlertCircle, CheckCircle2, type LucideIcon } from 'lucide-react';
 import { saveCloudflareToken, getCloudflareTokenStatus } from '@/lib/actions/networkActions';
 
 export const NetworkSecurityForm = () => {
@@ -178,7 +178,7 @@ export const NetworkSecurityForm = () => {
   );
 };
 
-const SecurityFeature = ({ icon: Icon, title, desc, active }: { icon: any, title: string, desc: string, active: boolean }) => (
+const SecurityFeature = ({ icon: Icon, title, desc, active }: { icon: LucideIcon, title: string, desc: string, active: boolean }) => (
   <div className="flex gap-4">
     <div className={`mt-1 ${active ? 'text-primary' : 'opacity-20'}`}>
       <Icon className="w-4 h-4" />

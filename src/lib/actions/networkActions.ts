@@ -8,6 +8,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
 import { encryptSecret } from '@/lib/services/encryption';
 import { revalidatePath } from 'next/cache';
 
@@ -57,9 +58,9 @@ export async function saveCloudflareToken(token: string) {
     revalidatePath('/setup');
 
     return { success: true, data: 'Token saved securely in DB and .env', error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to save cloudflare token:', error);
-    return { success: false, data: null, error: error.message || 'Failed to save token' };
+    return { success: false, data: null, error: getErrorMessage(error, 'Failed to save token') };
   }
 }
 

@@ -5,15 +5,22 @@ import { ReplyBox } from './ReplyBox';
 import { StatusActions } from './StatusActions';
 import { AuditTimelineEntry } from './AuditTimelineEntry';
 import { VelaLogo } from '@/components/ui/VelaLogo';
+import { requireAgentContext } from '@/lib/auth/session';
 
 interface ConversationViewProps {
   ticketId?: number;
 }
 
 export const ConversationView = async ({ ticketId }: ConversationViewProps) => {
-  // Hardcoded tenant fetch until Auth is implemented
-  const firstTenant = await prisma.tenant.findFirst();
-  const currentTenantId = firstTenant?.id || '';
+  const authResult = await requireAgentContext();
+  if (!authResult.ok) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-surface-container-lowest">
+        <p className="text-on-surface-variant font-bold">Sign in required</p>
+      </div>
+    );
+  }
+  const currentTenantId = authResult.ctx.tenantId;
 
   const activeTicket = await prisma.ticket.findFirst({
     where: { 

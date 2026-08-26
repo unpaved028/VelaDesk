@@ -1,6 +1,7 @@
 'use server';
 
 import { PrismaClient } from '@prisma/client';
+import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 
 const prisma = new PrismaClient();
@@ -30,11 +31,11 @@ export async function getSystemConfig() {
       data: config,
       error: null,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       data: null,
-      error: error.message || 'Failed to retrieve system config',
+      error: getErrorMessage(error, 'Failed to retrieve system config'),
     };
   }
 }
@@ -62,11 +63,11 @@ export async function updateSystemConfig(data: {
       data: config,
       error: null,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       data: null,
-      error: error.message || 'Failed to update system config',
+      error: getErrorMessage(error, 'Failed to update system config'),
     };
   }
 }
@@ -93,11 +94,11 @@ export async function saveBackupConfig(data: {
       data: config,
       error: null,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       data: null,
-      error: error.message || 'Failed to update backup config',
+      error: getErrorMessage(error, 'Failed to update backup config'),
     };
   }
 }

@@ -10,7 +10,7 @@ export default async function AdminDashboard() {
   const [tenantCount, workspaceCount, agentCount, ticketCount, mailboxCount] = await Promise.all([
     prisma.tenant.count(),
     prisma.workspace.count(),
-    prisma.user.count({ where: { role: { in: ['ADMIN', 'AGENT'] } } }),
+    prisma.user.count({ where: { role: { in: ['SUPER_ADMIN', 'ADMIN', 'AGENT'] } } }),
     prisma.ticket.count(),
     prisma.mailboxConfig.count(),
   ]);

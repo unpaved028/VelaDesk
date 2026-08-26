@@ -1,11 +1,29 @@
 import React from 'react';
 import { prisma } from '@/lib/db/prisma';
 import { TicketQueueItem } from './TicketQueueItem';
+import { requireAgentContext } from '@/lib/auth/session';
+import type { Priority } from '@prisma/client';
+
+const PRIORITY_LABEL: Record<Priority, 'Critical' | 'High' | 'Medium' | 'Low'> = {
+  URGENT: 'Critical',
+  HIGH: 'High',
+  MEDIUM: 'Medium',
+  LOW: 'Low',
+};
 
 export const TicketQueue = async () => {
-  // Hardcoded tenant fetch until Auth is implemented
-  const firstTenant = await prisma.tenant.findFirst();
-  const currentTenantId = firstTenant?.id || '';
+  const authResult = await requireAgentContext();
+  if (!authResult.ok) {
+    return (
+      <section className="w-[320px] lg:w-[360px] bg-surface-container-low flex flex-col shrink-0 z-20 border-r border-outline-variant/15">
+        <div className="flex flex-col items-center justify-center h-40 opacity-30">
+          <span className="material-symbols-outlined text-[48px]">lock</span>
+          <span className="text-xs font-bold uppercase tracking-widest mt-2">Sign in required</span>
+        </div>
+      </section>
+    );
+  }
+  const currentTenantId = authResult.ctx.tenantId;
 
   const tickets = await prisma.ticket.findMany({
     where: { tenantId: currentTenantId },
@@ -46,13 +64,13 @@ export const TicketQueue = async () => {
             <TicketQueueItem
               key={ticket.id}
               id={ticket.id.toString()}
-              ticketId={ticket.ticketNumber} 
+              ticketId={`INC-${ticket.id.toString().padStart(4, '0')}`}
               subject={ticket.subject}
-              snippet={ticket.snippet || ticket.description?.substring(0, 80)}
+              snippet={ticket.description?.substring(0, 80)}
               status={ticket.status}
-              priority={(ticket.priority as any) || 'Medium'}
+              priority={PRIORITY_LABEL[ticket.priority]}
               isDefault={index === 0}
-              slaTarget={slaTarget as any}
+              slaTarget={slaTarget ?? undefined}
             />
           );
         })}

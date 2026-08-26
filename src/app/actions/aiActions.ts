@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { revalidatePath } from 'next/cache';
 import { TicketIdSchema, createErrorResponse } from '@/lib/validation/schemas';
+import { requireAgentContext } from '@/lib/auth/session';
 
 export async function generateAutoSummary(ticketId: number) {
   try {
@@ -12,9 +13,9 @@ export async function generateAutoSummary(ticketId: number) {
       return createErrorResponse('Invalid ticket ID');
     }
 
-    const firstTenant = await prisma.tenant.findFirst();
-    const currentTenantId = firstTenant?.id || '';
-    if (!currentTenantId) return createErrorResponse('No active tenant found');
+    const authResult = await requireAgentContext();
+    if (!authResult.ok) return createErrorResponse(authResult.error);
+    const { tenantId: currentTenantId, userId } = authResult.ctx;
 
     const ticket = await prisma.ticket.findFirst({
       where: { 
@@ -78,16 +79,12 @@ ${conversationStr}`;
       return createErrorResponse('No summary generated from API');
     }
 
-    // Save summary as internal note
-    let agent = await prisma.user.findFirst({ where: { tenantId: currentTenantId, role: 'AGENT' }});
-    if (!agent) return createErrorResponse('No valid agent found to author the summary');
-
     const message = await prisma.message.create({
       data: {
         ticketId: ticket.id,
         body: `✨ **AI Auto-Summary**\n\n${summaryText}`,
         isInternal: true,
-        authorId: agent.id
+        authorId: userId
       }
     });
 
