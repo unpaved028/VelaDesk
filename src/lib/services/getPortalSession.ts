@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/db/prisma';
 import { verifySessionToken, SESSION_COOKIE_NAME } from '@/lib/services/portalSession';
 import { PortalSessionResult } from '@/types/portalSession';
 
@@ -26,5 +27,21 @@ export async function getPortalSession(): Promise<PortalSessionResult> {
     return { authenticated: false, session: null, reason: 'No session cookie found.' };
   }
 
-  return verifySessionToken(sessionCookie.value);
+  const verified = verifySessionToken(sessionCookie.value);
+  if (!verified.authenticated || !verified.session) return verified;
+
+  const user = await prisma.user.findFirst({
+    where: { email: verified.session.email, tenantId: verified.session.tenantId },
+    select: { isCustomerAdmin: true, role: true, name: true },
+  });
+
+  return {
+    authenticated: true,
+    session: {
+      ...verified.session,
+      name: user?.name ?? verified.session.name ?? verified.session.email,
+      // Only CUSTOMER users can be portal key-accounts — staff roles stay out of DLP widening
+      isCustomerAdmin: user?.role === 'CUSTOMER' && user.isCustomerAdmin === true,
+    },
+  };
 }

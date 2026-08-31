@@ -24,6 +24,9 @@ model Tenant {
   workspaces Workspace[]
   users      User[]
   customers  Customer[]
+
+  // Encrypted inbound RMM token (encryptSecret(value, tenantId) — SOP-05)
+  inboundWebhookSecret String?
 }
 
 // 2. Abteilungen / Bereiche (IT, HR, Maintenance)
@@ -51,6 +54,8 @@ model User {
   email           String             @unique
   name            String
   role            Role               @default(CUSTOMER)
+  // Portal key-account: see all tenant tickets/assets, never internal notes (v1.7.1)
+  isCustomerAdmin Boolean            @default(false)
   assignedTickets Ticket[]           @relation("AssignedAgent")
   assets          Asset[]
   approvals       Approval[]
@@ -101,6 +106,9 @@ model Ticket {
   // Using String instead of array since SQLite has no native array type
   tags String?
 
+  // RMM/monitoring correlation id (v1.6.2) — scoped with tenantId
+  externalAlertId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -126,6 +134,7 @@ model Ticket {
   @@index([workspaceId])
   @@index([status])
   @@index([parentId])
+  @@index([tenantId, externalAlertId])
 }
 
 enum TicketStatus {

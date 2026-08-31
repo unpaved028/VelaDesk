@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { ApiResponse } from '@/types/api';
 import { Ticket } from '@prisma/client';
 
@@ -16,12 +17,9 @@ export async function GET() {
       );
     }
 
-    // DLP: Hard filter by tenantId and requesterId (email)
+    // DLP: tenant always; requesterEmail unless Customer Admin
     const tickets = await prisma.ticket.findMany({
-      where: {
-        tenantId: session.tenantId,
-        requesterId: session.email,
-      },
+      where: portalTicketWhere(session),
       orderBy: {
         createdAt: 'desc',
       },

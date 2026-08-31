@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { ApiResponse } from '@/types/api';
 import { Ticket } from '@prisma/client';
 
@@ -26,12 +27,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       );
     }
 
-    // DLP: Hard filter by tenantId, requesterId (email), and only public messages
+    // DLP: tenant + (requester or customer-admin); never leak internal notes
     const ticket = await prisma.ticket.findFirst({
       where: {
         id: ticketId,
-        tenantId: session.tenantId,
-        requesterId: session.email,
+        ...portalTicketWhere(session),
       },
       include: {
         workspace: {

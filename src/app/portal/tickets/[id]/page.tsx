@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TicketStatusStepper, TicketStatus } from '@/components/portal/TicketStatusStepper';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { redirect } from 'next/navigation';
 
 export default async function CustomerTicketPage({ 
@@ -15,15 +16,13 @@ export default async function CustomerTicketPage({
   const { authenticated, session } = await getPortalSession();
   
   if (!authenticated || !session) {
-    redirect('/portal/login');
+    redirect('/login');
   }
 
-  // Real Ticket Data Enforcement (DLP)
   const ticket = await prisma.ticket.findFirst({
     where: {
       id: parseInt(id, 10),
-      tenantId: session.tenantId,
-      requesterId: session.email,
+      ...portalTicketWhere(session),
     },
     include: {
       workspace: {

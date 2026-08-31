@@ -10,6 +10,7 @@ export interface AgentPayload {
   email: string;
   role: Role;
   tenantId: string;
+  isCustomerAdmin?: boolean;
 }
 
 export async function getAgents() {
@@ -17,7 +18,7 @@ export async function getAgents() {
     const agents = await prisma.user.findMany({
       where: {
         role: {
-          in: ['SUPER_ADMIN', 'ADMIN', 'AGENT']
+          in: ['SUPER_ADMIN', 'ADMIN', 'AGENT', 'CUSTOMER']
         }
       },
       orderBy: { name: 'asc' },
@@ -39,7 +40,7 @@ export async function createAgent(data: AgentPayload) {
       return { success: false, data: null, error: 'All fields are required.' };
     }
 
-    if (!['ADMIN', 'AGENT'].includes(data.role)) {
+    if (!['ADMIN', 'AGENT', 'CUSTOMER'].includes(data.role)) {
       return { success: false, data: null, error: 'Invalid role.' };
     }
 
@@ -58,6 +59,7 @@ export async function createAgent(data: AgentPayload) {
         email: data.email,
         role: data.role,
         tenantId: data.tenantId,
+        isCustomerAdmin: data.role === 'CUSTOMER' && data.isCustomerAdmin === true,
       },
       include: {
         tenant: true
@@ -82,5 +84,21 @@ export async function deleteAgent(id: string, tenantId: string) {
   } catch (error: unknown) {
     console.error('Error deleting agent:', error);
     return { success: false, data: null, error: 'Cannot delete agent. They might have assigned tickets.' };
+  }
+}
+
+export async function setCustomerAdmin(id: string, tenantId: string, enabled: boolean) {
+  try {
+    const updated = await prisma.user.updateMany({
+      where: { id, tenantId, role: 'CUSTOMER' },
+      data: { isCustomerAdmin: enabled },
+    });
+    if (updated.count === 0) {
+      return { success: false, data: null, error: 'Customer user not found.' };
+    }
+    revalidatePath('/admin/agents');
+    return { success: true, data: { id, isCustomerAdmin: enabled }, error: null };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
   }
 }

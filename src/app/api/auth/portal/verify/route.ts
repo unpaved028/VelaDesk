@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
 import { validateAndConsumeToken, purgeExpiredTokens } from '@/lib/services/magicLink';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_HOURS } from '@/lib/services/portalSession';
 
@@ -36,8 +37,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Token valid — create a session JWT
-  const sessionToken = createSessionToken(result.email, result.tenantId);
+  const portalUser = await prisma.user.findFirst({
+    where: { email: result.email, tenantId: result.tenantId },
+    select: { isCustomerAdmin: true, role: true, name: true },
+  });
+
+  const sessionToken = createSessionToken(result.email, result.tenantId, {
+    isCustomerAdmin: portalUser?.role === 'CUSTOMER' && portalUser.isCustomerAdmin === true,
+    name: portalUser?.name,
+  });
 
   // Set the session cookie and redirect to the portal
   const response = NextResponse.redirect(new URL('/portal', request.url));

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { createTenant, deleteTenant, updateTenant } from '../../lib/actions/tenantActions';
-import { Building2, Plus, Trash2, Clock, Globe, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { regenerateInboundWebhook } from '../../lib/actions/inboundWebhookActions';
+import { Building2, Plus, Trash2, Clock, Globe, ChevronDown, ChevronUp, Save, Link as LinkIcon } from 'lucide-react';
 
 interface Tenant {
   id: string;
@@ -13,6 +14,7 @@ interface Tenant {
   businessDays: string;
   timezone: string;
   createdAt: Date;
+  inboundWebhookConfigured?: boolean;
 }
 
 export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) => {
@@ -23,6 +25,7 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Tenant>>({});
   const [error, setError] = useState<string | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState<Record<string, string>>({});
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +35,7 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
     startTransition(async () => {
       const res = await createTenant({ name, domain: domain.trim() || undefined });
       if (res.success && res.data) {
-        setTenants([res.data as unknown as Tenant, ...tenants]);
+        setTenants([{ ...(res.data as Tenant), inboundWebhookConfigured: false }, ...tenants]);
         setName('');
         setDomain('');
       } else {
@@ -214,6 +217,46 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
                         <span>Save Changes</span>
                       </button>
                     </div>
+                  </div>
+                  <div className="mt-6 p-4 rounded-xl bg-surface-container-lowest dark:bg-black/20 border border-surface-container dark:border-white/5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2 flex items-center gap-1.5">
+                      <LinkIcon className="w-3 h-3" />
+                      Inbound RMM webhook
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant mb-3">
+                      {tenant.inboundWebhookConfigured || webhookUrl[tenant.id]
+                        ? 'A unique token is configured. Rotate to issue a new URL.'
+                        : 'Generate a unique URL for PRTG / NinjaOne to POST alerts.'}
+                    </p>
+                    {webhookUrl[tenant.id] ? (
+                      <input
+                        readOnly
+                        value={webhookUrl[tenant.id]}
+                        className="w-full mb-3 px-3 py-2 bg-white dark:bg-black/40 border border-primary/30 rounded-lg text-[11px] font-mono"
+                      />
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          const res = await regenerateInboundWebhook(tenant.id);
+                          if (res.success && res.data) {
+                            setWebhookUrl((prev) => ({ ...prev, [tenant.id]: res.data.url }));
+                            setTenants((prev) =>
+                              prev.map((row) =>
+                                row.id === tenant.id ? { ...row, inboundWebhookConfigured: true } : row
+                              )
+                            );
+                          } else {
+                            alert(res.error || 'Failed to generate webhook URL');
+                          }
+                        });
+                      }}
+                      className="px-4 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold uppercase tracking-wider"
+                    >
+                      {tenant.inboundWebhookConfigured ? 'Rotate URL' : 'Generate URL'}
+                    </button>
                   </div>
                 </div>
               )}

@@ -15,9 +15,16 @@ export interface ApiResponse<T> {
 export async function getTenants() {
   try {
     const tenants = await prisma.tenant.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
-    return { success: true, data: tenants, error: null };
+    return {
+      success: true,
+      data: tenants.map(({ inboundWebhookSecret, ...tenant }) => ({
+        ...tenant,
+        inboundWebhookConfigured: Boolean(inboundWebhookSecret),
+      })),
+      error: null,
+    };
   } catch (error: unknown) {
     return { success: false, data: null, error: getErrorMessage(error) };
   }

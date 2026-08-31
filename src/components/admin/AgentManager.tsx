@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Users, ShieldAlert, ShieldCheck, Sparkles, Link as LinkIcon } from 'lucide-react';
-import { AgentPayload, createAgent, deleteAgent } from '../../lib/actions/agentActions';
+import { AgentPayload, createAgent, deleteAgent, setCustomerAdmin } from '../../lib/actions/agentActions';
 import { Role } from '@prisma/client';
 
 interface AgentRow {
@@ -11,6 +11,7 @@ interface AgentRow {
   email: string;
   role: Role;
   tenantId: string;
+  isCustomerAdmin?: boolean;
   tenant?: { name: string } | null;
 }
 
@@ -32,6 +33,7 @@ export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('AGENT');
   const [tenantId, setTenantId] = useState(tenants[0]?.id || '');
+  const [isCustomerAdmin, setIsCustomerAdminFlag] = useState(false);
 
   const [inviteLink, setInviteLink] = useState('');
   const [copyStatus, setCopyStatus] = useState('');
@@ -45,7 +47,7 @@ export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {
     setIsLoading(true);
     setError('');
 
-    const payload: AgentPayload = { name, email, role, tenantId };
+    const payload: AgentPayload = { name, email, role, tenantId, isCustomerAdmin };
 
     const res = await createAgent(payload);
     if (res.success && res.data) {
@@ -53,6 +55,7 @@ export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {
       setName('');
       setEmail('');
       setRole('AGENT');
+      setIsCustomerAdminFlag(false);
     } else {
       setError(res.error || 'Failed to create agent');
     }
@@ -111,8 +114,19 @@ export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {
               <select value={role} onChange={e => setRole(e.target.value as Role)} className={baseInputStyle} required>
                 <option value="AGENT">AGENT - Can work on tickets</option>
                 <option value="ADMIN">ADMIN - Management access</option>
+                <option value="CUSTOMER">CUSTOMER - Portal user</option>
               </select>
             </div>
+            {role === 'CUSTOMER' ? (
+              <label className="flex items-center gap-2 text-xs text-on-surface-variant">
+                <input
+                  type="checkbox"
+                  checked={isCustomerAdmin}
+                  onChange={(e) => setIsCustomerAdminFlag(e.target.checked)}
+                />
+                Customer Admin (all company tickets & assets)
+              </label>
+            ) : null}
 
             <button type="submit" disabled={isLoading} className="mt-2 bg-primary text-on-primary font-medium py-2 px-4 rounded-md text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
@@ -192,8 +206,28 @@ export const AgentManager = ({ initialAgents, tenants }: AgentManagerProps) => {
                   <div className="text-[11px] text-on-surface-variant dark:text-gray-400 mt-1 flex gap-2 items-center">
                      <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded">{tName}</span>
                      <span className="text-on-surface-variant/80">{agent.email}</span>
-                     {agent.role === 'ADMIN' ? (
-                       <span className="px-1.5 py-0.5 bg-error/10 text-error rounded flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> ADMIN</span>
+                     {agent.role === 'ADMIN' || agent.role === 'SUPER_ADMIN' ? (
+                       <span className="px-1.5 py-0.5 bg-error/10 text-error rounded flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> {agent.role}</span>
+                     ) : agent.role === 'CUSTOMER' ? (
+                       <button
+                         type="button"
+                         onClick={async () => {
+                           const next = !agent.isCustomerAdmin;
+                           const res = await setCustomerAdmin(agent.id, agent.tenantId, next);
+                           if (res.success) {
+                             setAgents((prev) =>
+                               prev.map((row) =>
+                                 row.id === agent.id ? { ...row, isCustomerAdmin: next } : row
+                               )
+                             );
+                           } else {
+                             alert(res.error);
+                           }
+                         }}
+                         className="px-1.5 py-0.5 bg-tertiary/10 text-tertiary rounded"
+                       >
+                         {agent.isCustomerAdmin ? 'CUSTOMER ADMIN' : 'CUSTOMER'}
+                       </button>
                      ) : (
                        <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> AGENT</span>
                      )}

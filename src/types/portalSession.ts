@@ -9,6 +9,9 @@ export interface PortalSessionPayload {
   email: string;
   /** Tenant this customer belongs to — enforces data isolation */
   tenantId: string;
+  /** Hydrated from User.isCustomerAdmin (v1.7.1) */
+  isCustomerAdmin?: boolean;
+  name?: string;
   /** JWT issued-at timestamp (seconds since epoch) */
   iat: number;
   /** JWT expiry timestamp (seconds since epoch) */

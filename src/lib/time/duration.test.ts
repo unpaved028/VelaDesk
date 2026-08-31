@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDurationMinutes } from './duration';
+import { formatDurationMinutes, parseDurationMinutes } from './duration';
 
 describe('parseDurationMinutes', () => {
   it('parses plain minutes', () => {
@@ -19,5 +19,14 @@ describe('parseDurationMinutes', () => {
     expect(parseDurationMinutes('0')).toBeNull();
     expect(parseDurationMinutes('abc')).toBeNull();
     expect(parseDurationMinutes('1h extra')).toBeNull();
+  });
+});
+
+describe('formatDurationMinutes', () => {
+  it('formats hours and minutes', () => {
+    expect(formatDurationMinutes(15)).toBe('15m');
+    expect(formatDurationMinutes(60)).toBe('1h');
+    expect(formatDurationMinutes(90)).toBe('1h 30m');
+    expect(formatDurationMinutes(0)).toBe('0m');
   });
 });

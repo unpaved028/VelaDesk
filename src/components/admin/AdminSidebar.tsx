@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, Building2, Briefcase, Users, Tags, Inbox } from 'lucide-react';
+import { LayoutDashboard, Settings, Building2, Briefcase, Users, Tags, Inbox, Receipt } from 'lucide-react';
 
 export const AdminSidebar = () => {
   const pathname = usePathname();
@@ -16,6 +16,7 @@ export const AdminSidebar = () => {
     { label: 'Agents', href: '/admin/agents', icon: Users },
     { label: 'Taxonomy', href: '/admin/taxonomy', icon: Tags },
     { label: 'Mailboxes', href: '/admin/mailboxes', icon: Inbox },
+    { label: 'Billing', href: '/admin/billing', icon: Receipt },
   ];
 
   return (

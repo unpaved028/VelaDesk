@@ -62,7 +62,11 @@ function base64urlDecode(str: string): string {
  * @param tenantId - Tenant this customer belongs to
  * @returns Signed JWT string
  */
-export function createSessionToken(email: string, tenantId: string): string {
+export function createSessionToken(
+  email: string,
+  tenantId: string,
+  options?: { isCustomerAdmin?: boolean; name?: string }
+): string {
   const key = getSigningKey();
 
   const now = Math.floor(Date.now() / 1000);
@@ -73,6 +77,8 @@ export function createSessionToken(email: string, tenantId: string): string {
   const payload: PortalSessionPayload = {
     email: email.toLowerCase().trim(),
     tenantId,
+    isCustomerAdmin: options?.isCustomerAdmin === true,
+    name: options?.name,
     iat: now,
     exp,
   };

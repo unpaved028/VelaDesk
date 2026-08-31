@@ -26,3 +26,13 @@ export function parseDurationMinutes(input: string): number | null {
 
   return minutes;
 }
+
+/** Formats minutes as "1h 30m", "2h", or "15m". */
+export function formatDurationMinutes(minutes: number): string {
+  if (minutes <= 0) return '0m';
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours > 0 && rest > 0) return `${hours}h ${rest}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${rest}m`;
+}

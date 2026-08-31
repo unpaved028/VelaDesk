@@ -2,6 +2,7 @@
 
 import { SLACountdown } from './SLACountdown';
 import { RelatedTicketsSection } from './RelatedTicketsSection';
+import { TimeTracker } from './TimeTracker';
 
 export interface ContextPanelRequester {
   name: string;
@@ -114,6 +115,8 @@ export const ContextPanel = ({
           isCompleted={!!resolvedAt}
         />
       </div>
+
+      {ticketId ? <TimeTracker ticketId={ticketId} /> : null}
 
       {ticketId ? <RelatedTicketsSection ticketId={ticketId} /> : null}
 
