@@ -28,7 +28,7 @@ export const TimeTracker = ({ ticketId }: TimeTrackerProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
