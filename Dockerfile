@@ -16,6 +16,11 @@ ENV NODE_ENV="production"
 ENV DATABASE_URL="file:./build-dummy.db"
 ENV VELADESK_MASTER_KEY="placeholder_for_build_only_1234567890123456"
 
+# Match the runner OpenSSL 3.x so Prisma generates linux-*-openssl-3.0.x engines
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 # Prisma & Build ausführen
 RUN npx prisma generate
 RUN npx prisma db push --skip-generate
