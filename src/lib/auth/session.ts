@@ -1,3 +1,4 @@
+import type { Session } from 'next-auth';
 import { auth } from '@/auth';
 import {
   isAdminPortalRole,
@@ -31,7 +32,7 @@ export interface AgentContext {
 export async function requireAgentContext(): Promise<
   { ok: true; ctx: AgentContext } | { ok: false; error: string }
 > {
-  let session: Awaited<ReturnType<typeof auth>> | null = null;
+  let session: Session | null = null;
   try {
     session = await auth();
   } catch (error) {
