@@ -1,6 +1,8 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
+import { unauthenticatedSignInPath } from '@/lib/auth/bootstrapAuth';
+import { readStaffBootstrapEnabled } from '@/lib/auth/entraConfig';
 import { requireAgentContext } from '@/lib/auth/session';
 
 /**
@@ -14,7 +16,7 @@ export default async function AgentLayout({
 }) {
   const authResult = await requireAgentContext();
   if (!authResult.ok) {
-    redirect('/api/auth/signin');
+    redirect(unauthenticatedSignInPath(await readStaffBootstrapEnabled()));
   }
 
   return (

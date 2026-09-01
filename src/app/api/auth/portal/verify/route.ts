@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { isStaffRole } from '@/lib/auth/roles';
+import { postVerifyPath } from '@/lib/auth/bootstrapAuth';
+import { readStaffBootstrapEnabled } from '@/lib/auth/entraConfig';
 import { validateAndConsumeToken, purgeExpiredTokens } from '@/lib/services/magicLink';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_HOURS } from '@/lib/services/portalSession';
+import {
+  createStaffSessionToken,
+  SESSION_TTL_HOURS as STAFF_SESSION_TTL_HOURS,
+  STAFF_SESSION_COOKIE_NAME,
+  staffSessionCookieOptions,
+} from '@/lib/services/staffSession';
 
 /**
  * GET /api/auth/portal/verify?token=...
  *
- * This is the endpoint the Magic Link URL points to.
- * Flow:
- * 1. Extract token from query string
- * 2. Validate & consume the Magic Link token (single-use)
- * 3. On success: create a JWT session, set it as HTTP-only cookie, redirect to /portal
- * 4. On failure: redirect to /login with error
- *
- * We also opportunistically purge expired tokens on each verification attempt
- * to keep the DB clean without needing a separate CRON job.
+ * Consumes a Magic Link token, then:
+ * - Staff (while Entra is not configured): HMAC staff cookie → /admin or /tickets
+ * - Customers: HMAC portal cookie → /portal
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -26,42 +29,61 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Validate and consume the magic link token
   const result = await validateAndConsumeToken(token);
 
   if (!result.valid || !result.email || !result.tenantId) {
-    // Redirect back to login with human-readable error
     const errorParam = encodeURIComponent(result.reason || 'invalid_token');
     return NextResponse.redirect(
       new URL(`/login?error=${errorParam}`, request.url)
     );
   }
 
-  const portalUser = await prisma.user.findFirst({
-    where: { email: result.email, tenantId: result.tenantId },
-    select: { isCustomerAdmin: true, role: true, name: true },
-  });
+  const [user, staffBootstrapEnabled] = await Promise.all([
+    prisma.user.findFirst({
+      where: { email: result.email, tenantId: result.tenantId },
+      select: { id: true, isCustomerAdmin: true, role: true, name: true },
+    }),
+    readStaffBootstrapEnabled(),
+  ]);
+
+  if (user && isStaffRole(user.role)) {
+    if (!staffBootstrapEnabled) {
+      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    }
+
+    const sessionToken = createStaffSessionToken({
+      email: result.email,
+      tenantId: result.tenantId,
+      userId: user.id,
+      role: user.role,
+    });
+    const dest = postVerifyPath('staff', user.role);
+    const response = NextResponse.redirect(new URL(dest, request.url));
+    response.cookies.set(
+      STAFF_SESSION_COOKIE_NAME,
+      sessionToken,
+      staffSessionCookieOptions(STAFF_SESSION_TTL_HOURS * 60 * 60)
+    );
+    purgeExpiredTokens().catch(() => {});
+    return response;
+  }
 
   const sessionToken = createSessionToken(result.email, result.tenantId, {
-    isCustomerAdmin: portalUser?.role === 'CUSTOMER' && portalUser.isCustomerAdmin === true,
-    name: portalUser?.name,
+    isCustomerAdmin: user?.role === 'CUSTOMER' && user.isCustomerAdmin === true,
+    name: user?.name,
   });
 
-  // Set the session cookie and redirect to the portal
-  const response = NextResponse.redirect(new URL('/portal', request.url));
+  const response = NextResponse.redirect(new URL(postVerifyPath('portal', user?.role), request.url));
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
-    httpOnly: true,                           // Prevents XSS access to session
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax',                          // CSRF protection while allowing navigations
-    path: '/',                                // Available on all routes (middleware needs access)
-    maxAge: SESSION_TTL_HOURS * 60 * 60,      // Cookie expiry matches JWT expiry
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_TTL_HOURS * 60 * 60,
   });
 
-  // Opportunistic cleanup — fire and forget, don't block the redirect
-  purgeExpiredTokens().catch(() => {
-    // Swallow errors — cleanup is best-effort, should never block login
-  });
+  purgeExpiredTokens().catch(() => {});
 
   return response;
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { resolveMagicLinkAudience } from '@/lib/auth/bootstrapAuth';
+import { readStaffBootstrapEnabled } from '@/lib/auth/entraConfig';
 import { generateMagicLink } from '@/lib/services/magicLink';
 import { ApiResponse } from '@/types/api';
 
@@ -7,13 +9,10 @@ import { ApiResponse } from '@/types/api';
  * POST /api/auth/portal/request-link
  * Body: { email: string }
  *
- * Looks up the customer's email in the database, generates a Magic Link,
- * and (in production) would send it via email. For now, we log the link
- * to the server console for testing purposes.
+ * Looks up Customer and User rows. Portal customers always get a Magic Link.
+ * Staff (SUPER_ADMIN/ADMIN/AGENT) get one only while Entra SSO is not configured.
  *
- * SECURITY: We always return success to the client, even if the email
- * is not found in the DB. This prevents email enumeration attacks.
- * The Magic Link is only generated if the email matches a known customer.
+ * SECURITY: Always return success to the client to prevent email enumeration.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,38 +28,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 });
     }
 
-    // Portal users are User(CUSTOMER) (Agent Manager / seed). Legacy Customer rows still count.
-    const [customer, portalUser] = await Promise.all([
+    const [customer, user, staffBootstrapEnabled] = await Promise.all([
       prisma.customer.findFirst({
         where: { email },
         select: { tenantId: true },
       }),
       prisma.user.findFirst({
-        where: { email, role: 'CUSTOMER' },
-        select: { tenantId: true },
+        where: { email },
+        select: { tenantId: true, role: true },
       }),
+      readStaffBootstrapEnabled(),
     ]);
-    const tenantId = customer?.tenantId ?? portalUser?.tenantId;
 
-    if (tenantId) {
+    const audience = resolveMagicLinkAudience({
+      staffBootstrapEnabled,
+      userRole: user?.role ?? null,
+      hasCustomerRecord: Boolean(customer),
+    });
+    const tenantId = user?.tenantId ?? customer?.tenantId;
+
+    if (audience !== 'none' && tenantId) {
       const result = await generateMagicLink({
         email,
         tenantId,
       });
 
-      // TODO (v0.8.7+): Send actual email via Graph API or SMTP
-      // For now, log the URL to server console for testing
-      console.log(`\n🔗 [MAGIC LINK] Generated for ${email}:`);
+      // TODO: Send actual email via Graph API or SMTP.
+      // First-run has no mail yet — the URL is in the application log.
+      console.log(`\n🔗 [MAGIC LINK] Generated for ${email} (${audience}):`);
       console.log(`   ${result.magicLinkUrl}`);
       console.log(`   Expires: ${result.expiresAt.toISOString()}\n`);
     } else {
-      // Email not found — do NOT reveal this to the client (anti-enumeration).
-      // Log for debugging and monitoring potential abuse attempts.
-      console.log(`⚠️ [MAGIC LINK] Request for unknown email: ${email}`);
+      console.log(`⚠️ [MAGIC LINK] Request for unknown or SSO-only email: ${email}`);
     }
 
-    // Always return success to prevent email enumeration attacks.
-    // The user sees "Check your email" regardless of whether the email exists.
     const response: ApiResponse<{ message: string }> = {
       success: true,
       data: { message: 'If an account exists for this email, a magic link has been sent.' },

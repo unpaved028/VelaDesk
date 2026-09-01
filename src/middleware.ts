@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { APP_VERSION, isNewer } from '@/lib/appVersion';
 import { isAdminPortalRole, isDevAuthBypassEnabled, isStaffRole } from '@/lib/auth/roles';
+import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
+import { unauthenticatedSignInPath } from '@/lib/auth/bootstrapAuth';
 
 /**
  * Edge Middleware — runs before every matched route.
@@ -14,13 +16,10 @@ import { isAdminPortalRole, isDevAuthBypassEnabled, isStaffRole } from '@/lib/au
  *
  * NOTE: Next.js Edge Middleware cannot use Node.js `crypto` module directly.
  * We perform a lightweight structural + expiry check here. The full HMAC
- * signature verification happens server-side in getPortalSession() and the
- * verify route. This is defense-in-depth: middleware catches obviously
- * invalid/expired sessions early (fast redirect), while the server-side
- * layer does the cryptographic verification.
+ * signature verification happens server-side in getPortalSession() /
+ * getStaffBootstrapContext(). Middleware only rejects obviously invalid tokens.
  */
 
-const SESSION_COOKIE_NAME = 'VELADESK_portal_session';
 const CODE_VERSION = APP_VERSION;
 
 export async function middleware(request: NextRequest) {
@@ -39,6 +38,9 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/apple-icon') ||
     path.startsWith('/icon');
 
+  // Default true so first-run (no Entra yet) is never locked behind SSO.
+  let staffBootstrapEnabled = true;
+
   if (!isSetupExempt) {
     try {
       const initRes = await fetch(new URL('/api/system/init-status', request.url), {
@@ -48,6 +50,9 @@ export async function middleware(request: NextRequest) {
 
       if (initRes.ok) {
         const { data } = await initRes.json();
+        if (typeof data?.staffBootstrapEnabled === 'boolean') {
+          staffBootstrapEnabled = data.staffBootstrapEnabled;
+        }
         if (data && !data.isInitialized) {
           // System not initialized → redirect to setup wizard
           return NextResponse.redirect(new URL('/setup', request.url));
@@ -83,33 +88,36 @@ export async function middleware(request: NextRequest) {
   const devCookie = request.cookies.get('authjs.session-token')?.value;
   const hasNextAuthSession = !!secureCookie || !!devCookie;
   const bypass = isDevAuthBypassEnabled(request.cookies.get('DEV_BYPASS_AUTH')?.value);
+  const signInUrl = unauthenticatedSignInPath(staffBootstrapEnabled);
 
   // ─── Agent Workspace Protection ──────────────────────────────────
   const isAgentApp = path === '/' || path.startsWith('/tickets');
   if (isAgentApp && !bypass) {
-    if (!hasNextAuthSession) {
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
-    }
-    try {
-      const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
-        headers: { cookie: request.headers.get('cookie') || '' },
-      });
-      const session = await sessionRes.json() as { user?: { role?: string } };
-      if (!isStaffRole(session?.user?.role)) {
-        return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    if (hasNextAuthSession) {
+      try {
+        const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
+          headers: { cookie: request.headers.get('cookie') || '' },
+        });
+        const session = await sessionRes.json() as { user?: { role?: string } };
+        if (!isStaffRole(session?.user?.role)) {
+          return NextResponse.redirect(new URL(signInUrl, request.url));
+        }
+      } catch (error) {
+        console.error('[Middleware] Agent role check failed:', error);
+        return NextResponse.redirect(new URL(signInUrl, request.url));
       }
-    } catch (error) {
-      console.error('[Middleware] Agent role check failed:', error);
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+    } else {
+      const staffRole = staffBootstrapEnabled
+        ? readStaffCookieRole(request.cookies.get(STAFF_SESSION_COOKIE_NAME)?.value)
+        : undefined;
+      if (!isStaffRole(staffRole)) {
+        return NextResponse.redirect(new URL(signInUrl, request.url));
+      }
     }
   }
 
   // ─── Admin Route Protection ───────────────────────────────────────
   if (path.startsWith('/admin')) {
-    if (!bypass && !hasNextAuthSession) {
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
-    }
-
     if (!bypass && hasNextAuthSession) {
       try {
         const sessionRes = await fetch(new URL('/api/auth/session', request.url), {
@@ -121,7 +129,17 @@ export async function middleware(request: NextRequest) {
         }
       } catch (error) {
         console.error('[Middleware] Admin role check failed:', error);
-        return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+        return NextResponse.redirect(new URL(signInUrl, request.url));
+      }
+    } else if (!bypass) {
+      const staffRole = staffBootstrapEnabled
+        ? readStaffCookieRole(request.cookies.get(STAFF_SESSION_COOKIE_NAME)?.value)
+        : undefined;
+      if (isStaffRole(staffRole) && !isAdminPortalRole(staffRole)) {
+        return NextResponse.redirect(new URL('/tickets', request.url));
+      }
+      if (!isAdminPortalRole(staffRole)) {
+        return NextResponse.redirect(new URL(signInUrl, request.url));
       }
     }
 
@@ -164,7 +182,7 @@ export async function middleware(request: NextRequest) {
 
   // ─── Portal Route Protection (v0.8.3) ─────────────────────────────
   if (path.startsWith('/portal')) {
-    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const sessionCookie = request.cookies.get(PORTAL_SESSION_COOKIE_NAME)?.value;
 
     if (!sessionCookie) {
       // No session → redirect to login
@@ -178,7 +196,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionCheck.valid) {
       // Invalid or expired session → clear cookie and redirect to login
       const response = NextResponse.redirect(new URL('/login?error=session_expired', request.url));
-      response.cookies.set(SESSION_COOKIE_NAME, '', {
+      response.cookies.set(PORTAL_SESSION_COOKIE_NAME, '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -194,6 +212,28 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next({
     request: { headers: requestHeaders },
   });
+}
+
+function readStaffCookieRole(token: string | undefined): string | undefined {
+  if (!token) return undefined;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return undefined;
+    const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(payloadJson) as {
+      exp?: number;
+      email?: string;
+      tenantId?: string;
+      userId?: string;
+      role?: string;
+    };
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload.exp || payload.exp < now) return undefined;
+    if (!payload.email || !payload.tenantId || !payload.userId || !payload.role) return undefined;
+    return payload.role;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SESSION_COOKIE_NAME } from '@/lib/services/portalSession';
+import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
 
 /**
  * POST /api/auth/portal/logout
  *
- * Destroys the portal session by clearing the HTTP-only session cookie.
- * Redirects the user back to the login page.
- *
- * Uses POST instead of GET to follow REST semantics —
- * logout is a state-changing operation.
+ * Clears portal and staff bootstrap session cookies, then redirects to /login.
  */
 export async function POST(request: NextRequest) {
   const response = NextResponse.redirect(new URL('/login', request.url));
-
-  // Clear the session cookie by setting it with maxAge=0
-  response.cookies.set(SESSION_COOKIE_NAME, '', {
+  const expired = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
-    maxAge: 0, // Immediately expires the cookie
-  });
+    maxAge: 0,
+  };
+
+  response.cookies.set(PORTAL_SESSION_COOKIE_NAME, '', expired);
+  response.cookies.set(STAFF_SESSION_COOKIE_NAME, '', expired);
 
   return response;
 }

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { PORTAL_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
 import { PortalSessionPayload, PortalSessionResult } from '@/types/portalSession';
 
 /**
@@ -18,7 +19,7 @@ import { PortalSessionPayload, PortalSessionResult } from '@/types/portalSession
  * - Full auditability of the signing/verification code.
  */
 
-const SESSION_COOKIE_NAME = 'VELADESK_portal_session';
+const SESSION_COOKIE_NAME = PORTAL_SESSION_COOKIE_NAME;
 const SESSION_TTL_HOURS = 24;
 
 /**

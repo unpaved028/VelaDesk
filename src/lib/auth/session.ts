@@ -5,6 +5,7 @@ import {
   isSuperAdminRole,
   type StaffRole,
 } from '@/lib/auth/roles';
+import { getStaffBootstrapContext } from '@/lib/services/getStaffSession';
 
 export {
   isAdminPortalRole,
@@ -16,7 +17,7 @@ export {
 /**
  * Session helpers for agent/admin Server Actions and API routes.
  *
- * tenantId and userId MUST come from the Auth.js session (SOP-02).
+ * tenantId and userId MUST come from Auth.js or the staff Magic Link session (SOP-02).
  * Never fall back to prisma.tenant.findFirst() or a synthetic demo agent.
  */
 
@@ -30,26 +31,38 @@ export interface AgentContext {
 export async function requireAgentContext(): Promise<
   { ok: true; ctx: AgentContext } | { ok: false; error: string }
 > {
-  const session = await auth();
+  let session: Awaited<ReturnType<typeof auth>> | null = null;
+  try {
+    session = await auth();
+  } catch (error) {
+    // Auth.js can throw when Entra env is missing; first-run uses Magic Link instead.
+    console.error('[auth] Session read failed:', error);
+  }
   const user = session?.user;
+
+  if (user?.id && user.tenantId && isStaffRole(user.role)) {
+    return {
+      ok: true,
+      ctx: {
+        userId: user.id,
+        tenantId: user.tenantId,
+        role: user.role,
+        email: user.email ?? '',
+      },
+    };
+  }
+
+  // First-run: Entra is not configured yet — accept the staff Magic Link cookie.
+  const bootstrap = await getStaffBootstrapContext();
+  if (bootstrap) {
+    return { ok: true, ctx: bootstrap };
+  }
 
   if (!user?.id || !user.tenantId) {
     return { ok: false, error: 'Not authenticated.' };
   }
 
-  if (!isStaffRole(user.role)) {
-    return { ok: false, error: 'Forbidden.' };
-  }
-
-  return {
-    ok: true,
-    ctx: {
-      userId: user.id,
-      tenantId: user.tenantId,
-      role: user.role,
-      email: user.email ?? '',
-    },
-  };
+  return { ok: false, error: 'Forbidden.' };
 }
 
 export async function requireAdminContext(): Promise<

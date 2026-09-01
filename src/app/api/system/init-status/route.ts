@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { isStaffBootstrapEnabled } from '@/lib/auth/bootstrapAuth';
 
 /**
  * GET /api/system/init-status
@@ -24,7 +25,7 @@ export async function GET() {
     const [config, adminCount] = await Promise.all([
       prisma.systemConfig.findUnique({
         where: { id: 'global' },
-        select: { id: true, appVersion: true },
+        select: { id: true, appVersion: true, entraIdConfigured: true },
       }),
       prisma.user.count({
         where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
@@ -32,10 +33,11 @@ export async function GET() {
     ]);
 
     const isInitialized = !!config && adminCount > 0;
+    const staffBootstrapEnabled = isStaffBootstrapEnabled(config?.entraIdConfigured);
 
     return NextResponse.json({
       success: true,
-      data: { isInitialized },
+      data: { isInitialized, staffBootstrapEnabled, entraIdConfigured: config?.entraIdConfigured === true },
       error: null,
     }, {
       status: 200,
@@ -51,7 +53,7 @@ export async function GET() {
     // this ensures the setup wizard is shown if DB is broken
     return NextResponse.json({
       success: true,
-      data: { isInitialized: false },
+      data: { isInitialized: false, staffBootstrapEnabled: true, entraIdConfigured: false },
       error: null,
     }, { status: 200 });
   }

@@ -1,16 +1,29 @@
 "use client";
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Globe, Mail, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 
-// 1. Die ursprüngliche Komponente (ohne export default)
 function LoginContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [staffBootstrapEnabled, setStaffBootstrapEnabled] = useState(true);
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
+
+  useEffect(() => {
+    fetch('/api/system/init-status')
+      .then((res) => res.json())
+      .then((payload: { data?: { staffBootstrapEnabled?: boolean } }) => {
+        if (typeof payload.data?.staffBootstrapEnabled === 'boolean') {
+          setStaffBootstrapEnabled(payload.data.staffBootstrapEnabled);
+        }
+      })
+      .catch(() => {
+        // Keep the first-run default (Magic Link for staff).
+      });
+  }, []);
 
   const handleSendMagicLink = async () => {
     if (!email) return;
@@ -79,6 +92,11 @@ function LoginContent() {
                   <span className="text-white font-bold">{email}</span>.
                   Click the link in the email to sign in instantly.
                 </p>
+                {staffBootstrapEnabled ? (
+                  <p className="text-white/30 text-xs font-medium leading-relaxed">
+                    Until Microsoft Entra is connected, the link is also written to the application log.
+                  </p>
+                ) : null}
               </div>
               <button
                 onClick={() => setStatus('idle')}
@@ -91,7 +109,11 @@ function LoginContent() {
             <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex flex-col gap-2">
                 <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-                <p className="text-white/40 text-sm font-medium">Enter your email to receive a secure magic link.</p>
+                <p className="text-white/40 text-sm font-medium">
+                  {staffBootstrapEnabled
+                    ? 'Enter your email to receive a secure magic link. Staff can sign in here until Microsoft Entra is connected.'
+                    : 'Enter your email to receive a secure magic link.'}
+                </p>
               </div>
 
               {/* Inline error message from API */}
