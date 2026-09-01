@@ -12,6 +12,8 @@ export interface PortalSessionPayload {
   /** Hydrated from User.isCustomerAdmin (v1.7.1) */
   isCustomerAdmin?: boolean;
   name?: string;
+  /** VelaDesk User id when a matching CUSTOMER row exists */
+  userId?: string;
   /** JWT issued-at timestamp (seconds since epoch) */
   iat: number;
   /** JWT expiry timestamp (seconds since epoch) */

@@ -32,13 +32,14 @@ export async function getPortalSession(): Promise<PortalSessionResult> {
 
   const user = await prisma.user.findFirst({
     where: { email: verified.session.email, tenantId: verified.session.tenantId },
-    select: { isCustomerAdmin: true, role: true, name: true },
+    select: { id: true, isCustomerAdmin: true, role: true, name: true },
   });
 
   return {
     authenticated: true,
     session: {
       ...verified.session,
+      userId: user?.id,
       name: user?.name ?? verified.session.name ?? verified.session.email,
       // Only CUSTOMER users can be portal key-accounts — staff roles stay out of DLP widening
       isCustomerAdmin: user?.role === 'CUSTOMER' && user.isCustomerAdmin === true,

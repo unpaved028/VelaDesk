@@ -62,7 +62,7 @@ export async function generateMagicLink(config: MagicLinkConfig): Promise<MagicL
  * The URL points to the login verification endpoint.
  *
  * @param token - The raw hex token
- * @returns Full clickable URL, e.g. "https://VelaDesk.example.com/login/verify?token=abc123..."
+ * @returns Full clickable URL, e.g. "https://VelaDesk.example.com/api/auth/portal/verify?token=abc123..."
  */
 export async function buildMagicLinkUrl(token: string): Promise<string> {
   // Fetch baseUrl from SystemConfig (configured in Admin panel)
@@ -75,7 +75,7 @@ export async function buildMagicLinkUrl(token: string): Promise<string> {
 
   // Clean trailing slash and construct verification URL
   const cleanBase = baseUrl.replace(/\/+$/, '');
-  return `${cleanBase}/login/verify?token=${token}`;
+  return `${cleanBase}/api/auth/portal/verify?token=${token}`;
 }
 
 /**

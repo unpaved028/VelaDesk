@@ -29,18 +29,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 });
     }
 
-    // Look up the customer by email to get their tenantId
-    // Check both Customer and User models (agents can also have portal access)
-    const customer = await prisma.customer.findFirst({
-      where: { email },
-      select: { tenantId: true },
-    });
+    // Portal users are User(CUSTOMER) (Agent Manager / seed). Legacy Customer rows still count.
+    const [customer, portalUser] = await Promise.all([
+      prisma.customer.findFirst({
+        where: { email },
+        select: { tenantId: true },
+      }),
+      prisma.user.findFirst({
+        where: { email, role: 'CUSTOMER' },
+        select: { tenantId: true },
+      }),
+    ]);
+    const tenantId = customer?.tenantId ?? portalUser?.tenantId;
 
-    if (customer) {
-      // Customer found — generate and "send" the magic link
+    if (tenantId) {
       const result = await generateMagicLink({
         email,
-        tenantId: customer.tenantId,
+        tenantId,
       });
 
       // TODO (v0.8.7+): Send actual email via Graph API or SMTP

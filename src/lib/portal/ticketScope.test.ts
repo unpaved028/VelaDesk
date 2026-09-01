@@ -14,4 +14,13 @@ describe('portalTicketWhere', () => {
       portalTicketWhere({ email: 'a@acme.com', tenantId: 't1', isCustomerAdmin: true })
     ).toEqual({ tenantId: 't1' });
   });
+
+  it('matches email or user id when both are known', () => {
+    expect(
+      portalTicketWhere({ email: 'a@acme.com', tenantId: 't1', userId: 'user_1' })
+    ).toEqual({
+      tenantId: 't1',
+      OR: [{ requesterId: 'a@acme.com' }, { requesterId: 'user_1' }],
+    });
+  });
 });

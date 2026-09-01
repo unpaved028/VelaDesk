@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { PortalTicketList } from '@/components/portal/PortalTicketList';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,7 @@ export default async function PortalHomePage() {
   if (!authenticated || !session) redirect('/login');
 
   const tickets = await prisma.ticket.findMany({
-    where: { tenantId: session.tenantId, requesterId: session.email },
+    where: portalTicketWhere(session),
     orderBy: { createdAt: 'desc' },
     include: { workspace: { select: { name: true } } },
   });

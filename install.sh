@@ -58,7 +58,9 @@ fi
 
 # 2. Setup Directory
 print_step "Setting up VelaDesk directory at $VELADESK_DIR 📁"
-mkdir -p "$VELADESK_DIR"
+mkdir -p "$VELADESK_DIR/data"
+# Container user is nextjs (uid 1001). Root-owned ./data makes SQLite fail (code 14).
+chown -R 1001:1001 "$VELADESK_DIR/data" || true
 cd "$VELADESK_DIR"
 print_success "Directory ready."
 

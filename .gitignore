@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (secrets — NEVER commit)
 .env*
+.local/
 
 # vercel
 .vercel
