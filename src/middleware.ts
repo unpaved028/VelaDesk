@@ -4,6 +4,7 @@ import { APP_VERSION, isNewer } from '@/lib/appVersion';
 import { isAdminPortalRole, isDevAuthBypassEnabled, isStaffRole } from '@/lib/auth/roles';
 import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
 import { unauthenticatedSignInPath } from '@/lib/auth/bootstrapAuth';
+import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
 
 /**
  * Edge Middleware — runs before every matched route.
@@ -24,6 +25,7 @@ const CODE_VERSION = APP_VERSION;
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const redirect = (to: string) => NextResponse.redirect(publicAbsoluteUrl(request, to));
 
   // ─── First-Run Setup Interceptor ──────────────────────────────────
   // Check if system is initialized before allowing access to main app routes.
@@ -55,7 +57,7 @@ export async function middleware(request: NextRequest) {
         }
         if (data && !data.isInitialized) {
           // System not initialized → redirect to setup wizard
-          return NextResponse.redirect(new URL('/setup', request.url));
+          return redirect('/setup');
         }
       }
     } catch (error) {
@@ -76,7 +78,7 @@ export async function middleware(request: NextRequest) {
         const { data } = await initRes.json();
         if (data && data.isInitialized) {
           // System already initialized → redirect away from setup
-          return NextResponse.redirect(new URL('/admin', request.url));
+          return redirect('/admin');
         }
       }
     } catch (error) {
@@ -100,18 +102,18 @@ export async function middleware(request: NextRequest) {
         });
         const session = await sessionRes.json() as { user?: { role?: string } };
         if (!isStaffRole(session?.user?.role)) {
-          return NextResponse.redirect(new URL(signInUrl, request.url));
+          return redirect(signInUrl);
         }
       } catch (error) {
         console.error('[Middleware] Agent role check failed:', error);
-        return NextResponse.redirect(new URL(signInUrl, request.url));
+        return redirect(signInUrl);
       }
     } else {
       const staffRole = staffBootstrapEnabled
         ? readStaffCookieRole(request.cookies.get(STAFF_SESSION_COOKIE_NAME)?.value)
         : undefined;
       if (!isStaffRole(staffRole)) {
-        return NextResponse.redirect(new URL(signInUrl, request.url));
+        return redirect(signInUrl);
       }
     }
   }
@@ -125,21 +127,21 @@ export async function middleware(request: NextRequest) {
         });
         const session = await sessionRes.json() as { user?: { role?: string } };
         if (!isAdminPortalRole(session?.user?.role)) {
-          return NextResponse.redirect(new URL('/tickets', request.url));
+          return redirect('/tickets');
         }
       } catch (error) {
         console.error('[Middleware] Admin role check failed:', error);
-        return NextResponse.redirect(new URL(signInUrl, request.url));
+        return redirect(signInUrl);
       }
     } else if (!bypass) {
       const staffRole = staffBootstrapEnabled
         ? readStaffCookieRole(request.cookies.get(STAFF_SESSION_COOKIE_NAME)?.value)
         : undefined;
       if (isStaffRole(staffRole) && !isAdminPortalRole(staffRole)) {
-        return NextResponse.redirect(new URL('/tickets', request.url));
+        return redirect('/tickets');
       }
       if (!isAdminPortalRole(staffRole)) {
-        return NextResponse.redirect(new URL(signInUrl, request.url));
+        return redirect(signInUrl);
       }
     }
 
@@ -167,10 +169,10 @@ export async function middleware(request: NextRequest) {
             const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
             if (isAdmin) {
-              return NextResponse.redirect(new URL('/admin/update-wizard', request.url));
+              return redirect('/admin/update-wizard');
             } else {
               // Redirect normal agents to maintenance/locked page
-              return NextResponse.redirect(new URL('/admin/maintenance', request.url));
+              return redirect('/admin/maintenance');
             }
           }
         }
@@ -186,7 +188,7 @@ export async function middleware(request: NextRequest) {
 
     if (!sessionCookie) {
       // No session → redirect to login
-      return NextResponse.redirect(new URL('/login', request.url));
+      return redirect('/login');
     }
 
     // Lightweight structural + expiry check (Edge-compatible, no Node.js crypto)
@@ -195,7 +197,7 @@ export async function middleware(request: NextRequest) {
 
     if (!sessionCheck.valid) {
       // Invalid or expired session → clear cookie and redirect to login
-      const response = NextResponse.redirect(new URL('/login?error=session_expired', request.url));
+      const response = redirect('/login?error=session_expired');
       response.cookies.set(PORTAL_SESSION_COOKIE_NAME, '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

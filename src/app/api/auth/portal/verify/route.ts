@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma';
 import { isStaffRole } from '@/lib/auth/roles';
 import { postVerifyPath } from '@/lib/auth/bootstrapAuth';
 import { readStaffBootstrapEnabled } from '@/lib/auth/entraConfig';
+import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
 import { validateAndConsumeToken, purgeExpiredTokens } from '@/lib/services/magicLink';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_HOURS } from '@/lib/services/portalSession';
 import {
@@ -24,18 +25,14 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('token');
 
   if (!token) {
-    return NextResponse.redirect(
-      new URL('/login?error=missing_token', request.url)
-    );
+    return NextResponse.redirect(publicAbsoluteUrl(request, '/login?error=missing_token'));
   }
 
   const result = await validateAndConsumeToken(token);
 
   if (!result.valid || !result.email || !result.tenantId) {
     const errorParam = encodeURIComponent(result.reason || 'invalid_token');
-    return NextResponse.redirect(
-      new URL(`/login?error=${errorParam}`, request.url)
-    );
+    return NextResponse.redirect(publicAbsoluteUrl(request, `/login?error=${errorParam}`));
   }
 
   const [user, staffBootstrapEnabled] = await Promise.all([
@@ -48,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   if (user && isStaffRole(user.role)) {
     if (!staffBootstrapEnabled) {
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+      return NextResponse.redirect(publicAbsoluteUrl(request, '/api/auth/signin'));
     }
 
     const sessionToken = createStaffSessionToken({
@@ -58,7 +55,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
     });
     const dest = postVerifyPath('staff', user.role);
-    const response = NextResponse.redirect(new URL(dest, request.url));
+    const response = NextResponse.redirect(publicAbsoluteUrl(request, dest));
     response.cookies.set(
       STAFF_SESSION_COOKIE_NAME,
       sessionToken,
@@ -73,7 +70,9 @@ export async function GET(request: NextRequest) {
     name: user?.name,
   });
 
-  const response = NextResponse.redirect(new URL(postVerifyPath('portal', user?.role), request.url));
+  const response = NextResponse.redirect(
+    publicAbsoluteUrl(request, postVerifyPath('portal', user?.role))
+  );
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,

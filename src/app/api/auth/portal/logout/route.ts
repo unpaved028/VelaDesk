@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
+import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
 
 /**
  * POST /api/auth/portal/logout
@@ -7,7 +8,7 @@ import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/aut
  * Clears portal and staff bootstrap session cookies, then redirects to /login.
  */
 export async function POST(request: NextRequest) {
-  const response = NextResponse.redirect(new URL('/login', request.url));
+  const response = NextResponse.redirect(publicAbsoluteUrl(request, '/login'));
   const expired = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
