@@ -4,7 +4,7 @@ import { APP_VERSION, isNewer } from '@/lib/appVersion';
 import { isAdminPortalRole, isDevAuthBypassEnabled, isStaffRole } from '@/lib/auth/roles';
 import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
 import { unauthenticatedSignInPath } from '@/lib/auth/bootstrapAuth';
-import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
+import { publicAbsoluteUrl, isHttpsPublicRequest } from '@/lib/http/publicOrigin';
 
 /**
  * Edge Middleware — runs before every matched route.
@@ -200,7 +200,7 @@ export async function middleware(request: NextRequest) {
       const response = redirect('/login?error=session_expired');
       response.cookies.set(PORTAL_SESSION_COOKIE_NAME, '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: isHttpsPublicRequest(request),
         sameSite: 'lax',
         path: '/',
         maxAge: 0,

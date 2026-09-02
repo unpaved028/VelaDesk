@@ -64,3 +64,10 @@ function protocolOf(requestUrl: string, host: string): string {
   if (host.endsWith(':443')) return 'https';
   return 'http';
 }
+
+export function isHttpsPublicRequest(request: {
+  url: string;
+  headers: { get(name: string): string | null };
+}): boolean {
+  return publicRequestOrigin(request).startsWith('https://');
+}

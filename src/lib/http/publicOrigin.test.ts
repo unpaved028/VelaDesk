@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isUnspecifiedBindHost, publicAbsoluteUrl, publicRequestOrigin } from './publicOrigin';
+import { isHttpsPublicRequest, isUnspecifiedBindHost, publicAbsoluteUrl, publicRequestOrigin } from './publicOrigin';
 
 function req(url: string, headers: Record<string, string>) {
   return {
@@ -58,5 +58,27 @@ describe('publicAbsoluteUrl', () => {
         '/admin'
       ).href
     ).toBe('http://pi.local:3000/admin');
+  });
+});
+
+describe('isHttpsPublicRequest', () => {
+  it('is false on plain HTTP first-run hosts', () => {
+    expect(
+      isHttpsPublicRequest(
+        req('http://0.0.0.0:3000/login', { host: 'pi.local:3000' })
+      )
+    ).toBe(false);
+  });
+
+  it('is true behind a TLS proxy', () => {
+    expect(
+      isHttpsPublicRequest(
+        req('http://0.0.0.0:3000/login', {
+          host: '0.0.0.0:3000',
+          'x-forwarded-proto': 'https',
+          'x-forwarded-host': 'veladesk.example.com',
+        })
+      )
+    ).toBe(true);
   });
 });

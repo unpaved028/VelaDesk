@@ -103,10 +103,12 @@ export function verifyStaffSessionToken(token: string): StaffSessionResult {
   return { authenticated: true, session: payload };
 }
 
-export function staffSessionCookieOptions(maxAgeSeconds: number) {
+export function staffSessionCookieOptions(maxAgeSeconds: number, secure: boolean) {
   return {
     httpOnly: true as const,
-    secure: process.env.NODE_ENV === 'production',
+    // Secure only when the public origin is HTTPS. Production HTTP (Pi first-run)
+    // must still accept the session cookie.
+    secure,
     sameSite: 'lax' as const,
     path: '/',
     maxAge: maxAgeSeconds,

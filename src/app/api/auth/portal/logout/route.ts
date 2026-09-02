@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PORTAL_SESSION_COOKIE_NAME, STAFF_SESSION_COOKIE_NAME } from '@/lib/auth/sessionCookies';
-import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
+import { publicAbsoluteUrl, isHttpsPublicRequest } from '@/lib/http/publicOrigin';
 
 /**
  * POST /api/auth/portal/logout
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.redirect(publicAbsoluteUrl(request, '/login'));
   const expired = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttpsPublicRequest(request),
     sameSite: 'lax' as const,
     path: '/',
     maxAge: 0,

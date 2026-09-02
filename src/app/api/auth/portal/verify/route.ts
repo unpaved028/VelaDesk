@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db/prisma';
 import { isStaffRole } from '@/lib/auth/roles';
 import { postVerifyPath } from '@/lib/auth/bootstrapAuth';
 import { readStaffBootstrapEnabled } from '@/lib/auth/entraConfig';
-import { publicAbsoluteUrl } from '@/lib/http/publicOrigin';
+import { publicAbsoluteUrl, isHttpsPublicRequest } from '@/lib/http/publicOrigin';
 import { validateAndConsumeToken, purgeExpiredTokens } from '@/lib/services/magicLink';
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_HOURS } from '@/lib/services/portalSession';
 import {
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set(
       STAFF_SESSION_COOKIE_NAME,
       sessionToken,
-      staffSessionCookieOptions(STAFF_SESSION_TTL_HOURS * 60 * 60)
+      staffSessionCookieOptions(STAFF_SESSION_TTL_HOURS * 60 * 60, isHttpsPublicRequest(request))
     );
     purgeExpiredTokens().catch(() => {});
     return response;
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
   response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttpsPublicRequest(request),
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL_HOURS * 60 * 60,
