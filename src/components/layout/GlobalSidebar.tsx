@@ -12,7 +12,6 @@ export const GlobalSidebar = () => {
   const navItems = [
     { href: '/', icon: 'dashboard', label: 'Dashboard', active: pathname === '/' },
     { href: '/tickets', icon: 'confirmation_number', label: 'Tickets', active: pathname.startsWith('/tickets') },
-    { href: '/customers', icon: 'group', label: 'Customers', active: pathname.startsWith('/customers') },
     { href: '/admin', icon: 'settings', label: 'Settings', active: pathname.startsWith('/admin') },
   ];
 

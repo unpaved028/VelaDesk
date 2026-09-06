@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveCloudflareToken } from '@/lib/actions/networkActions';
 import { completeFirstRunSetup } from '@/app/actions/setupActions';
+import { runMspBestPracticesSeed } from '@/lib/actions/seedActions';
+import { APP_VERSION } from '@/lib/appVersion';
 import { 
   Rocket, 
   ChevronRight, 
@@ -259,7 +261,9 @@ export default function SetupWizardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl text-left">
                     {/* Option 1: Empty Start */}
                     <button 
-                      onClick={() => router.push('/admin')}
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => router.push('/login')}
                       className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98]"
                     >
                       <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
@@ -273,8 +277,20 @@ export default function SetupWizardPage() {
 
                     {/* Option 2: MSP Best Practices */}
                     <button 
-                      onClick={() => router.push('/admin?seed=true')}
-                      className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98]"
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={async () => {
+                        setError(null);
+                        setIsSubmitting(true);
+                        const result = await runMspBestPracticesSeed();
+                        setIsSubmitting(false);
+                        if (!result.success) {
+                          setError(result.error || 'Could not apply MSP Best Practices.');
+                          return;
+                        }
+                        router.push('/login');
+                      }}
+                      className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98] disabled:opacity-50"
                     >
                       <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                         <Zap className="w-5 h-5 opacity-40 group-hover:opacity-100 group-hover:text-primary transition-all" />
@@ -342,7 +358,7 @@ export default function SetupWizardPage() {
           </div>
           <div className="w-1 h-1 bg-white rounded-full" />
           <div className="text-[10px] font-bold uppercase tracking-widest">
-            v1.0.0 Stable Build
+            v{APP_VERSION}
           </div>
         </div>
       </main>

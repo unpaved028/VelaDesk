@@ -20,6 +20,9 @@ declare module "next-auth" {
 }
 
 export const authConfig: NextAuthConfig = {
+  // HTTP first-run hosts (pi.local) are not in AUTH_URL. Without this, Auth.js
+  // throws UntrustedHost on /api/auth/session even when staff use Magic Link.
+  trustHost: true,
   providers: [
     EntraID({
       clientId: process.env.AZURE_AD_CLIENT_ID,

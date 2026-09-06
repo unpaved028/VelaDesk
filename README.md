@@ -1,62 +1,73 @@
 # VelaDesk
 
-Ein mandantenfähiges, leichtgewichtiges CSM/ITSM-System.
+Lightweight, multi-tenant CSM/ITSM for small IT teams and MSPs. Runs on a Raspberry Pi or a small Windows Server. Microsoft 365 is the primary mail channel.
 
-## Schnellinstallation (Linux / Raspberry Pi)
+**Version:** 0.3.6  
+**License:** [MIT](./LICENSE)
 
-Mit dem folgenden Befehl wird VelaDesk vollautomatisch inklusive Docker installiert, gestartet und konfiguriert (inkl. `.env` und Master-Key-Generierung):
+## What it is
+
+A helpdesk that you host yourself: ticket queue, customer portal (Magic Link), shared-mailbox ingest via Microsoft Graph, MSP tenants, SLAs, time tracking, and inbound RMM webhooks.
+
+It is not Zammad or GLPI. The point is a first workday on modest hardware, not a full ITIL suite.
+
+## Screenshots
+
+| Login | Admin |
+| --- | --- |
+| ![Login](public/screenshots/login.png) | ![Admin](public/screenshots/admin.png) |
+
+| Queue | Ticket |
+| --- | --- |
+| ![Queue](public/screenshots/queue.png) | ![Ticket](public/screenshots/ticket.png) |
+
+## Install
+
+### Linux / Raspberry Pi
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.sh | sudo bash
 ```
 
-Die App ist anschließend unter `http://<IP-Adresse>:3000` erreichbar. Die Konfiguration landet unter `/opt/VelaDesk/`.
+The app listens on `http://<host>:3000`. Config lives in `/opt/VelaDesk/`. Data is SQLite under `./data`.
 
-## Schnellinstallation (Windows Server / Desktop)
+### Windows Server
 
-Führe PowerShell als **Administrator** aus und wende diesen Befehl an:
+PowerShell as Administrator:
 
 ```powershell
 irm https://raw.githubusercontent.com/unpaved028/VelaDesk/refs/heads/master/install.ps1 | iex
 ```
 
-Die App ist anschließend unter `http://localhost:3000` erreichbar. Die Konfiguration landet unter `C:\VelaDesk\`.
+Then open `http://localhost:3000`. Config lives in `C:\VelaDesk\`.
 
----
+## First run
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+1. Open the setup wizard (`/setup` until an admin exists).
+2. Create the first SUPER_ADMIN.
+3. Choose **MSP Best Practices** to seed Hardware/Software/Netzwerk/Account, P1/P2/Standard SLAs, and one sample ticket — or **Lean Start** for an empty system.
+4. Sign in at `/login` with a Magic Link.
 
-## Getting Started
+Until Microsoft Entra is connected, staff use the same Magic Link as the portal. If no mailbox is configured, the login page shows a **copyable** link. Nothing is emailed, and the UI does not claim otherwise.
 
-First, run the development server:
+## Microsoft 365
+
+Connect a shared mailbox under **Admin → Mailboxes**. Public replies and Magic Link mail go out through Graph only when that mailbox is active. Without it, replies are saved in the ticket and not sent.
+
+## Updates
+
+Images publish to `ghcr.io/unpaved028/veladesk:latest`. On the host:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd /opt/VelaDesk
+docker compose pull veladesk-app
+docker compose up -d --force-recreate veladesk-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Requirements
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Docker and Docker Compose
+- About 512 MB RAM is enough for the app container
+- Optional: Microsoft 365 app registration with `Mail.ReadWrite.Shared` / `Mail.Send`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Do not deploy this as a Vercel serverless app. The runtime is one container plus SQLite.

@@ -8,6 +8,9 @@ function LoginContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [delivery, setDelivery] = useState<'email' | 'copy' | 'none'>('none');
+  const [magicLinkUrl, setMagicLinkUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [staffBootstrapEnabled, setStaffBootstrapEnabled] = useState(true);
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
@@ -37,12 +40,19 @@ function LoginContent() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as {
+        success?: boolean;
+        error?: string;
+        data?: { message?: string; delivery?: 'email' | 'copy' | 'none'; magicLinkUrl?: string | null };
+      };
 
       if (data.success) {
+        setDelivery(data.data?.delivery ?? 'none');
+        setMagicLinkUrl(data.data?.magicLinkUrl ?? null);
+        setCopied(false);
         setStatus('sent');
       } else {
-        setErrorMessage(data.error || 'Failed to send magic link.');
+        setErrorMessage(data.error || 'Failed to issue a magic link.');
         setStatus('error');
       }
     } catch {
@@ -86,16 +96,44 @@ function LoginContent() {
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
               <div className="flex flex-col gap-2">
-                <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {delivery === 'email' ? 'Check your email' : 'Sign-in link'}
+                </h2>
                 <p className="text-white/40 text-sm font-medium leading-relaxed">
-                  We've sent a magic link to <br />
-                  <span className="text-white font-bold">{email}</span>.
-                  Click the link in the email to sign in instantly.
+                  {delivery === 'email' ? (
+                    <>
+                      A sign-in link was emailed to <span className="text-white font-bold">{email}</span>.
+                    </>
+                  ) : delivery === 'copy' && magicLinkUrl ? (
+                    <>
+                      No mailbox is configured. Nothing was emailed to{' '}
+                      <span className="text-white font-bold">{email}</span>. Copy the link below.
+                    </>
+                  ) : (
+                    <>
+                      If an account exists for <span className="text-white font-bold">{email}</span>,
+                      a sign-in link can be issued. Nothing was emailed.
+                    </>
+                  )}
                 </p>
-                {staffBootstrapEnabled ? (
-                  <p className="text-white/30 text-xs font-medium leading-relaxed">
-                    Until Microsoft Entra is connected, the link is also written to the application log.
-                  </p>
+                {delivery === 'copy' && magicLinkUrl ? (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <input
+                      readOnly
+                      value={magicLinkUrl}
+                      className="w-full h-12 bg-white/[0.05] border border-white/10 text-[11px] font-mono rounded-xl px-3 text-white/80"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(magicLinkUrl);
+                        setCopied(true);
+                      }}
+                      className="h-10 bg-white text-[#0b0f10] rounded-xl text-[10px] font-bold uppercase tracking-widest"
+                    >
+                      {copied ? 'Copied' : 'Copy sign-in link'}
+                    </button>
+                  </div>
                 ) : null}
               </div>
               <button

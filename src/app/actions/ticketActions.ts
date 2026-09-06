@@ -95,17 +95,16 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
     const results = await prisma.$transaction(transactions);
     const message = results[0];
 
+    let mailDelivery: 'sent' | 'no_mailbox' | 'no_recipient' | 'graph_error' | 'internal' = 'internal';
     if (!isInternal) {
-      // Background execution of email sending
-      import('@/lib/services/emailSender').then(({ sendTicketReplyNotification }) => {
-        sendTicketReplyNotification(
-          ticket.id,
-          currentTenantId,
-          ticket.workspaceId,
-          ticket.requesterId,
-          validatedBody
-        ).catch((err) => console.error('Email sending failed:', err));
-      });
+      const { sendTicketReplyNotification } = await import('@/lib/services/emailSender');
+      mailDelivery = await sendTicketReplyNotification(
+        ticket.id,
+        currentTenantId,
+        ticket.workspaceId,
+        ticket.requesterId,
+        validatedBody
+      );
     }
 
     const totalMessages = await prisma.message.count({ where: { ticketId: validatedId } });
@@ -116,7 +115,7 @@ export async function submitTicketReply(ticketId: number, body: string, type: 'P
     }
 
     revalidatePath('/');
-    return { success: true, data: message, error: null };
+    return { success: true, data: { message, mailDelivery }, error: null };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
     return createErrorResponse(message);

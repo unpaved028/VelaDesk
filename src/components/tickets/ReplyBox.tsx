@@ -12,17 +12,27 @@ interface ReplyBoxProps {
 export const ReplyBox = ({ ticketId }: ReplyBoxProps) => {
   const [isInternal, setIsInternal] = useState(false);
   const [text, setText] = useState('');
+  const [deliveryNote, setDeliveryNote] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
-    
-    // Save message via Server Action
+
     const res = await submitTicketReply(ticketId, text, isInternal ? 'INTERNAL' : 'PUBLIC');
-    
+
     if (res?.success) {
       setText('');
+      const delivery = res.data && 'mailDelivery' in res.data ? res.data.mailDelivery : null;
+      if (delivery === 'sent') {
+        setDeliveryNote('Reply saved and emailed to the requester.');
+      } else if (delivery === 'no_mailbox') {
+        setDeliveryNote('Reply saved. No mailbox is configured — the requester was not emailed.');
+      } else if (delivery === 'graph_error' || delivery === 'no_recipient') {
+        setDeliveryNote('Reply saved, but outbound mail failed.');
+      } else {
+        setDeliveryNote(null);
+      }
     } else {
-      console.error('Failed to submit reply:', res?.error);
+      setDeliveryNote(res?.error || 'Failed to submit reply.');
     }
   };
 
@@ -94,6 +104,10 @@ export const ReplyBox = ({ ticketId }: ReplyBoxProps) => {
           placeholder={isInternal ? "Internal notes are only visible to agents..." : "Type your message to the customer..."} 
           rows={3} 
         />
+
+        {deliveryNote ? (
+          <p className="px-3 pb-1 text-[10px] font-medium text-on-surface-variant">{deliveryNote}</p>
+        ) : null}
 
         <div className="flex justify-between items-center mt-1 px-2 pb-2">
           {/* Action Tools */}
