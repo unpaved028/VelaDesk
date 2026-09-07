@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Download, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import type { BillingSummary } from '@/lib/actions/billingActions';
 import { formatDurationMinutes } from '@/lib/time/duration';
 import { parseYearMonth, shiftYearMonth, formatYearMonth, currentYearMonth } from '@/lib/time/monthRange';
@@ -19,45 +20,43 @@ export const BillingDashboard = ({ summary }: BillingDashboardProps) => {
   };
 
   return (
-    <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-      <header className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-on-background dark:text-white">Billing</h1>
-          <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-1">
-            Logged time per tenant for the selected month.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-surface-container-low dark:bg-white/5 border border-surface-container dark:border-white/5 rounded-xl">
-            <button
-              type="button"
-              onClick={() => goTo(-1)}
-              className="p-2 text-on-surface-variant hover:text-on-surface"
-              aria-label="Previous month"
+    <div className="custom-scrollbar h-full overflow-y-auto p-8">
+      <AdminPageHeader
+        title="Billing"
+        description="Logged time per tenant for the selected month."
+        actions={
+          <>
+            <div className="flex items-center gap-1 rounded-xl border border-outline-variant/15 bg-surface-container-low">
+              <button
+                type="button"
+                onClick={() => goTo(-1)}
+                className="p-2 text-on-surface-variant hover:text-on-surface"
+                aria-label="Previous month"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-3 text-sm font-bold tabular-nums text-on-surface">
+                {summary.month}
+              </span>
+              <button
+                type="button"
+                onClick={() => goTo(1)}
+                className="p-2 text-on-surface-variant hover:text-on-surface"
+                aria-label="Next month"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <a
+              href={`/api/billing/export?month=${summary.month}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-3 text-sm font-bold text-on-background dark:text-white tabular-nums">
-              {summary.month}
-            </span>
-            <button
-              type="button"
-              onClick={() => goTo(1)}
-              className="p-2 text-on-surface-variant hover:text-on-surface"
-              aria-label="Next month"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          <a
-            href={`/api/billing/export?month=${summary.month}`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold uppercase tracking-wider"
-          >
-            <Download className="w-4 h-4" />
-            CSV
-          </a>
-        </div>
-      </header>
+              <Download className="w-4 h-4" />
+              CSV
+            </a>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[

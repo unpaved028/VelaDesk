@@ -50,10 +50,10 @@ export const Omnibox = () => {
       />
       
       {/* Das Modal */}
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#1a1f24] rounded-2xl shadow-2xl border border-surface-container dark:border-white/10 overflow-hidden animate-in slide-in-from-top-4 duration-200">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-surface-container rounded-2xl shadow-2xl border border-surface-container dark:border-white/10 overflow-hidden animate-in slide-in-from-top-4 duration-200">
         
         {/* Search Header */}
-        <div className="flex items-center gap-4 px-6 h-16 border-b border-surface-container dark:border-white/5 bg-surface-bright dark:bg-[#1a1f24]">
+        <div className="flex items-center gap-4 px-6 h-16 border-b border-surface-container dark:border-white/5 bg-surface-bright dark:bg-surface-container">
           <Search className="w-5 h-5 text-on-surface-variant dark:text-white/30" />
           <input
             autoFocus
@@ -68,7 +68,7 @@ export const Omnibox = () => {
         </div>
 
         {/* Results Area */}
-        <div className="max-h-[440px] overflow-y-auto custom-scrollbar p-3 space-y-1 bg-surface-container-lowest dark:bg-[#1a1f24]">
+        <div className="max-h-[440px] overflow-y-auto custom-scrollbar p-3 space-y-1 bg-surface-container-lowest dark:bg-surface-container">
           
           {search.length === 0 ? (
             <>
@@ -97,7 +97,7 @@ export const Omnibox = () => {
         </div>
 
         {/* Footer Bar */}
-        <div className="px-6 h-12 bg-surface-container-low dark:bg-[#12181b] border-t border-surface-container dark:border-white/5 flex items-center justify-between text-[11px] text-on-surface-variant dark:text-on-surface/40">
+        <div className="px-6 h-12 bg-surface-container-low dark:bg-surface-container border-t border-surface-container dark:border-white/5 flex items-center justify-between text-[11px] text-on-surface-variant dark:text-on-surface/40">
            <div className="flex gap-4">
               <span className="flex items-center gap-1.5"><CornerDownLeft className="w-3.5 h-3.5 opacity-50" /> Auswählen</span>
               <span className="flex items-center gap-1.5"><X className="w-3.5 h-3.5 opacity-50" /> Schließen</span>

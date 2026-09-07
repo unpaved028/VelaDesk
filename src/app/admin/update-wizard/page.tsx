@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { APP_VERSION } from '@/lib/appVersion';
+import { VelaLogo } from '@/components/ui/VelaLogo';
 import { acknowledgeAppVersion } from '@/lib/actions/updateActions';
 
 export default function UpdateWizardPage() {
@@ -38,7 +39,7 @@ export default function UpdateWizardPage() {
   const baseInputStyle = "w-full p-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all";
 
   return (
-    <div className="min-h-screen bg-[#0b0f10] text-white flex flex-col items-center justify-center p-6 antialiased selection:bg-primary/30">
+    <div className="min-h-screen bg-[#000e23] text-white flex flex-col items-center justify-center p-6 antialiased selection:bg-primary/30">
       
       {/* Background Decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -47,6 +48,11 @@ export default function UpdateWizardPage() {
       </div>
 
       <div className="w-full max-w-2xl relative">
+        <div className="mb-8 flex justify-center">
+          <div className="h-12 w-12 overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
+            <VelaLogo variant="icon" className="h-full w-full" />
+          </div>
+        </div>
         
         {/* Progress bar */}
         <div className="flex gap-2 mb-12">
@@ -65,8 +71,8 @@ export default function UpdateWizardPage() {
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
                 <Sparkles className="w-3 h-3" /> System Update v{APP_VERSION}
               </div>
-              <h1 className="text-4xl font-black bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent mb-4">
-                What's New in This Release
+              <h1 className="mb-4 font-headline text-3xl font-bold tracking-tight text-white">
+                What&apos;s New in This Release
               </h1>
               <p className="text-gray-400 text-sm max-w-md mx-auto">
                 We've upgraded your system with new enterprise-grade features and stability improvements.

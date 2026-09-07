@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
 import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { PortalTicketList } from '@/components/portal/PortalTicketList';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +20,10 @@ export default async function CompanyTicketsPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-black tracking-tight">Alle Firmen-Tickets</h1>
-        <p className="text-sm text-on-surface-variant mt-1">Alle Vorgänge Ihres Mandanten. Interne Notizen bleiben ausgeblendet.</p>
-      </header>
+      <PortalPageHeader
+        title="Alle Firmen-Tickets"
+        description="Alle Vorgänge Ihres Mandanten. Interne Notizen bleiben ausgeblendet."
+      />
       <PortalTicketList
         showRequester
         tickets={tickets.map((ticket) => ({

@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
-import { User, Mail, Shield, Monitor, Smartphone, Laptop, Trash2, ArrowRight } from 'lucide-react';
+import { Mail, Shield, Monitor, Smartphone, Laptop, Trash2, ArrowRight } from 'lucide-react';
+import { LetterAvatar } from '@/components/ui/LetterAvatar';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
 export default function ProfilePage() {
   // Mock Data
@@ -21,21 +23,18 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-12 pb-24">
-      {/* Header Section */}
-      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-4xl font-black tracking-tighter text-on-background dark:text-white mb-2 uppercase">
-          User Profile
-        </h1>
-        <p className="text-on-surface-variant/60 font-medium">Manage your personal settings and registered workspace assets.</p>
-      </section>
+      <PortalPageHeader
+        title="Profil"
+        description="Persönliche Einstellungen und hinterlegte Arbeitsplatz-Assets."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Profile Card & Info */}
         <div className="lg:col-span-1 space-y-6">
           <div className="p-8 bg-white dark:bg-white/5 rounded-[32px] border border-surface-container dark:border-white/5 shadow-xl dark:shadow-none animate-in fade-in zoom-in-95 duration-700 delay-100">
             <div className="flex flex-col items-center text-center">
-              <div className="w-24 h-24 rounded-full bg-slate-900 dark:bg-white flex items-center justify-center mb-6 shadow-2xl overflow-hidden ring-8 ring-slate-100 dark:ring-white/5">
-                <User className="w-10 h-10 text-white dark:text-slate-900" />
+              <div className="mb-6">
+                <LetterAvatar name={user.name} size={96} />
               </div>
               <h2 className="text-2xl font-black tracking-tight mb-1">{user.name}</h2>
               <span className="text-[10px] font-black uppercase tracking-widest text-[#f9a825] dark:text-tertiary px-3 py-1 bg-[#fff9c4] dark:bg-tertiary/10 rounded-full mb-6">

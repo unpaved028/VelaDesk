@@ -8,11 +8,11 @@ import {
   Monitor, 
   ShieldCheck, 
   Wifi, 
-  Zap, 
   FileText,
   Search,
   ArrowRight
 } from 'lucide-react';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
 interface ServiceItem {
   id: string;
@@ -85,32 +85,22 @@ export default function RequestCatalogPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Search & Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 dark:text-white/20 tracking-widest uppercase mb-1">
-            <Zap className="w-3 h-3 fill-current" />
-            <span>ITIL Service Catalog</span>
+      <PortalPageHeader
+        title="Was benötigen Sie heute?"
+        description="Wählen Sie eine Dienstleistung aus unserem Katalog aus oder nutzen Sie die Suche, um schneller ans Ziel zu kommen."
+        actions={
+          <div className="relative group w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Katalog durchsuchen..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-background dark:text-white leading-[1.1]">
-            Was benötigen Sie heute?
-          </h1>
-          <p className="text-slate-500 dark:text-white/40 max-w-xl text-lg font-medium leading-relaxed">
-            Wählen Sie eine Dienstleistung aus unserem Katalog aus oder nutzen Sie die Suche, um schneller ans Ziel zu kommen.
-          </p>
-        </div>
-
-        <div className="relative group w-full md:w-80">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Katalog durchsuchen..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white dark:bg-white/5 border border-surface-container dark:border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
-          />
-        </div>
-      </div>
+        }
+      />
 
       {/* Grid Layout */}
       {filteredServices.length > 0 ? (
@@ -118,7 +108,7 @@ export default function RequestCatalogPage() {
           {filteredServices.map((service) => (
             <div 
               key={service.id}
-              className="group relative flex flex-col bg-white dark:bg-[#12181b] border border-surface-container dark:border-white/5 rounded-[32px] p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="group relative flex flex-col bg-white dark:bg-surface-container border border-surface-container dark:border-white/5 rounded-[32px] p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className={`w-14 h-14 rounded-2xl ${service.color} bg-opacity-10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
                 <service.icon className={`w-7 h-7 text-white dark:text-on-surface`} />
@@ -168,13 +158,12 @@ export default function RequestCatalogPage() {
       )}
 
       {/* Quick Actions Footer */}
-      <div className="bg-slate-900 dark:bg-white rounded-[40px] p-8 md:p-12 mt-10 flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+      <div className="relative mt-10 flex flex-col items-center justify-between gap-8 overflow-hidden rounded-2xl bg-[#000e23] p-8 md:flex-row md:p-12">
         <div className="relative z-10 flex flex-col gap-2">
-          <h2 className="text-white dark:text-[#0b0f10] text-3xl font-extrabold tracking-tight">Nicht gefunden?</h2>
-          <p className="text-white/60 dark:text-[#0b0f10]/60 font-medium">Öffnen Sie ein allgemeines Ticket für Ihr Anliegen.</p>
+          <h2 className="font-headline text-2xl font-bold tracking-tight text-white">Nicht gefunden?</h2>
+          <p className="font-medium text-white/60">Öffnen Sie ein allgemeines Ticket für Ihr Anliegen.</p>
         </div>
-        <button className="relative z-10 bg-white dark:bg-[#0b0f10] text-slate-900 dark:text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform shadow-xl active:scale-95">
+        <button className="relative z-10 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#000e23]">
           Support kontaktieren
         </button>
       </div>

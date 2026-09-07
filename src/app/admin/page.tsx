@@ -2,7 +2,7 @@ import React from 'react';
 import { prisma } from '@/lib/db/prisma';
 import { BackupButton } from '@/components/admin/BackupButton';
 import { MspSeedButton } from '@/components/admin/MspSeedButton';
-import { Ticket, Users, Building2, Briefcase, Inbox } from 'lucide-react';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,47 +41,45 @@ export default async function AdminDashboard() {
   ];
 
   const stats = [
-    { label: 'Tenants', value: tenantCount, icon: Building2, color: 'text-blue-500' },
-    { label: 'Workspaces', value: workspaceCount, icon: Briefcase, color: 'text-purple-500' },
-    { label: 'Agents', value: agentCount, icon: Users, color: 'text-green-500' },
-    { label: 'Tickets', value: ticketCount, icon: Ticket, color: 'text-amber-500' },
-    { label: 'Mailboxes', value: mailboxCount, icon: Inbox, color: 'text-cyan-500' },
+    { label: 'Tenants', value: tenantCount, icon: 'domain' },
+    { label: 'Workspaces', value: workspaceCount, icon: 'work' },
+    { label: 'Agents', value: agentCount, icon: 'group' },
+    { label: 'Tickets', value: ticketCount, icon: 'confirmation_number' },
+    { label: 'Mailboxes', value: mailboxCount, icon: 'inbox' },
   ];
 
   return (
-    <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-on-background dark:text-white">Admin Dashboard</h1>
-          <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-1">
-            Welcome to the VelaDesk Admin Panel. Use the sidebar to configure the system.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {categoryCount === 0 ? <MspSeedButton /> : null}
-          <BackupButton />
-        </div>
-      </header>
+    <div className="custom-scrollbar h-full overflow-y-auto p-8">
+      <AdminPageHeader
+        title="Admin Dashboard"
+        description="Welcome to the VelaDesk Admin Panel. Use the sidebar to configure the system."
+        actions={
+          <>
+            {categoryCount === 0 ? <MspSeedButton /> : null}
+            <BackupButton />
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="bg-surface-container-low dark:bg-white/5 p-5 rounded-xl border border-surface-container dark:border-white/5 flex flex-col gap-2"
+            className="flex flex-col gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-low p-5"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-on-surface-variant dark:text-gray-400 uppercase tracking-wider">
+              <span className="text-xs font-medium uppercase tracking-wider text-on-surface-variant">
                 {stat.label}
               </span>
-              <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              <span className="material-symbols-outlined text-[18px] text-primary">{stat.icon}</span>
             </div>
-            <span className="text-2xl font-bold text-on-background dark:text-white">{stat.value}</span>
+            <span className="font-headline text-2xl font-bold text-on-surface">{stat.value}</span>
           </div>
         ))}
       </div>
 
-      <div className="bg-surface-container-low dark:bg-white/5 p-6 rounded-xl border border-surface-container dark:border-white/5">
-        <h3 className="font-medium text-lg mb-2 text-on-background dark:text-white">System Status</h3>
+      <div className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-6">
+        <h3 className="mb-2 font-headline text-lg font-medium text-on-surface">System Status</h3>
         <p className="text-xs text-on-surface-variant mb-3">
           Version {config?.appVersion || 'unknown'}
         </p>

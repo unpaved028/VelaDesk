@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { TaxonomyManager } from '@/components/admin/TaxonomyManager';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getCategories, getSLAs } from '@/lib/actions/taxonomyActions';
 
 export const dynamic = 'force-dynamic';
@@ -21,13 +22,10 @@ export default async function AdminTaxonomyPage() {
   return (
     <div className="p-8 h-full overflow-y-auto">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-on-background dark:text-white">Taxonomy & SLAs</h1>
-          <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-2">
-            Configure ticket categories and service level agreements.
-            These can be bound to specific tenants or globally available.
-          </p>
-        </header>
+        <AdminPageHeader
+          title="Taxonomy & SLAs"
+          description="Configure ticket categories and service level agreements. These can be bound to specific tenants or globally available."
+        />
 
         <TaxonomyManager 
           initialCategories={categories || []}

@@ -75,7 +75,7 @@ export const SystemConfigForm = ({ initialData, workspaces }: SystemConfigFormPr
             value={formData.baseUrl}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="https://VelaDesk.yourdomain.com"
           />
           <p className="mt-1 text-xs text-on-surface-variant dark:text-gray-500">
@@ -92,7 +92,7 @@ export const SystemConfigForm = ({ initialData, workspaces }: SystemConfigFormPr
             name="defaultTimezone"
             value={formData.defaultTimezone}
             onChange={handleChange}
-            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             <option value="UTC">UTC</option>
             <option value="Europe/Berlin">Europe/Berlin</option>
@@ -116,7 +116,7 @@ export const SystemConfigForm = ({ initialData, workspaces }: SystemConfigFormPr
             value={formData.systemEmailSender}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="noreply@VelaDesk.local"
           />
           <p className="mt-1 text-xs text-on-surface-variant dark:text-gray-500">
@@ -140,7 +140,7 @@ export const SystemConfigForm = ({ initialData, workspaces }: SystemConfigFormPr
               name="defaultWorkspaceId"
               value={formData.defaultWorkspaceId || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               <option value="">— No Catch-All —</option>
               {workspaces.map(ws => (

@@ -84,7 +84,7 @@ export const RoutingRuleList = ({ tenantId, initialRules, workspaces }: RoutingR
 
   return (
     <div className="space-y-4">
-      <div className="bg-surface dark:bg-[#12181b] border border-surface-container dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-surface dark:bg-surface-container border border-surface-container dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

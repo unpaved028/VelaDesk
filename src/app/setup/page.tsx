@@ -6,8 +6,8 @@ import { saveCloudflareToken } from '@/lib/actions/networkActions';
 import { completeFirstRunSetup } from '@/app/actions/setupActions';
 import { runMspBestPracticesSeed } from '@/lib/actions/seedActions';
 import { APP_VERSION } from '@/lib/appVersion';
+import { VelaLogo } from '@/components/ui/VelaLogo';
 import { 
-  Rocket, 
   ChevronRight, 
   ChevronLeft, 
   Globe, 
@@ -102,7 +102,7 @@ export default function SetupWizardPage() {
   const progress = (step / totalSteps) * 100;
 
   return (
-    <div className="min-h-screen bg-[#0b0f10] text-white flex flex-col items-center justify-center p-6 antialiased selection:bg-primary/30">
+    <div className="min-h-screen bg-[#000e23] text-white flex flex-col items-center justify-center p-6 antialiased selection:bg-primary/30">
       {/* Background Glow */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
 
@@ -111,10 +111,10 @@ export default function SetupWizardPage() {
         
         {/* Header Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/5 border border-white/10 rounded-3xl mb-8 shadow-2xl">
-            <Rocket className="w-10 h-10 text-primary animate-pulse" />
+          <div className="mb-8 inline-flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
+            <VelaLogo variant="icon" className="h-full w-full" />
           </div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/40">
+          <h1 className="mb-2 font-headline text-3xl font-bold tracking-tight">
             Welcome to VelaDesk
           </h1>
           <p className="text-on-surface-variant/60 font-medium tracking-tight">
@@ -164,7 +164,7 @@ export default function SetupWizardPage() {
                   <div>
                     <h2 className="text-2xl font-black tracking-tight mb-2">Systems Analysis</h2>
                     <p className="text-sm text-on-surface-variant/60 leading-relaxed">
-                      We&apos;ve analyzed your environment. Everything looks ready for detonation.
+                      We&apos;ve analyzed your environment. Everything looks ready.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -267,7 +267,7 @@ export default function SetupWizardPage() {
                       className="group p-6 rounded-[24px] bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:bg-white/[0.08] flex flex-col items-start gap-4 active:scale-[0.98]"
                     >
                       <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                        <Rocket className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                        <span className="material-symbols-outlined text-xl opacity-40 transition-opacity group-hover:opacity-100">rocket_launch</span>
                       </div>
                       <div>
                         <div className="text-sm font-bold mb-1">Lean Start</div>

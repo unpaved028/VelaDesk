@@ -4,6 +4,7 @@ import { SystemConfigForm } from '../../../components/admin/SystemConfigForm';
 import { UpdateDashboard } from '../../../components/admin/UpdateDashboard';
 import { BackupConfigForm } from '../../../components/admin/BackupConfigForm';
 import { NetworkSecurityForm } from '../../../components/admin/NetworkSecurityForm';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { PrismaClient } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -46,13 +47,11 @@ export default async function SystemConfigPage() {
   }));
 
   return (
-    <div className="p-8 h-full overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-transparent">
-      <header className="mb-12">
-        <h1 className="text-3xl font-black tracking-tighter text-on-background dark:text-white uppercase">System Console</h1>
-        <p className="text-sm font-medium text-on-surface-variant/60 mt-1">
-          Manage core installation parameters and software lifecycle.
-        </p>
-      </header>
+    <div className="custom-scrollbar h-full overflow-y-auto bg-surface-container-lowest p-8">
+      <AdminPageHeader
+        title="System"
+        description="Manage core installation parameters and software lifecycle."
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pb-12">
         {/* Update Engine - Primary focus for lifecycle management */}

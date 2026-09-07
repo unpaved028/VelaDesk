@@ -42,18 +42,17 @@ export default function AssetInventoryPage() {
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto min-h-screen bg-surface dark:bg-[#0b0f10]">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+    <div className="mx-auto min-h-screen max-w-[1600px] bg-surface-container-lowest p-8">
+      <div className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-on-background dark:text-white">
+          <h1 className="font-headline text-2xl font-bold tracking-tight text-on-surface">
             Asset Inventory
           </h1>
-          <p className="text-on-surface-variant dark:text-white/50 text-sm mt-1">
+          <p className="mt-2 text-sm text-on-surface-variant">
             Verwalte und tracke die Hardware deines Unternehmens.
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-6 py-3 rounded-2xl font-bold text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all">
+        <button className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">
           <Plus className="w-4 h-4" />
           <span>New Asset</span>
         </button>

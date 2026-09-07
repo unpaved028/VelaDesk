@@ -25,7 +25,7 @@ export default async function AdminLayout({
       <GlobalSidebar />
       <div className="ml-[64px] flex w-full h-full">
         <AdminSidebar />
-        <main className="flex-1 bg-surface-container-lowest dark:bg-[#1a1f24] flex flex-col h-full overflow-hidden">
+        <main className="flex h-full flex-1 flex-col overflow-hidden bg-surface-container-lowest">
           {children}
         </main>
       </div>

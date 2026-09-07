@@ -2,6 +2,7 @@ import React from 'react';
 import { getWorkspaces } from '../../../lib/actions/workspaceActions';
 import { getTenants } from '../../../lib/actions/tenantActions';
 import { WorkspaceManager } from '../../../components/admin/WorkspaceManager';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +25,10 @@ export default async function WorkspacesPage() {
 
   return (
     <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-on-background dark:text-white">Workspace Management</h1>
-        <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-1">
-          Manage organizational units (like IT-Support) within your Tenants.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Workspace Management"
+        description="Manage organizational units (like IT-Support) within your Tenants."
+      />
       
       <WorkspaceManager initialWorkspaces={workspaces} tenants={tenants} />
     </div>

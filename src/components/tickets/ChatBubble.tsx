@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import { LetterAvatar } from '@/components/ui/LetterAvatar';
 
 interface ChatBubbleProps {
   body: string;
@@ -14,13 +15,17 @@ export const ChatBubble = ({ body, variant, authorName, timestamp, avatarUrl }: 
   if (variant === 'customer') {
     return (
       <div className="flex space-x-4 max-w-3xl">
-        <Image 
-          src={avatarUrl || "/avatar-placeholder.jpg"} 
-          width={40}
-          height={40}
-          className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline-variant/20" 
-          alt={authorName || "User"} 
-        />
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-full border border-outline-variant/20 object-cover"
+            alt={authorName || "User"}
+          />
+        ) : (
+          <LetterAvatar name={authorName || 'Customer'} />
+        )}
         <div>
           <div className="flex items-baseline space-x-2 mb-1">
             <span className="font-bold text-sm text-on-surface">{authorName || 'Customer'}</span>

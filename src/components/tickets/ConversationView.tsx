@@ -53,7 +53,7 @@ export const ConversationView = async ({ ticketId }: ConversationViewProps) => {
       {/* Absolute Header with Glassmorphism */}
       <header className="absolute top-0 left-0 right-0 z-20 h-20 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 animate-in fade-in slide-in-from-top-4 duration-500">
       <div className="flex items-center gap-5 translate-y-px">
-        <VelaLogo size="small" />
+        <VelaLogo variant="horizontal" size="small" />
         <div className="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center border border-outline-variant/10 shadow-sm group hover:border-primary/20 transition-colors">
           <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors">confirmation_number</span>
         </div>

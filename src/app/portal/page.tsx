@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
 import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { PortalTicketList } from '@/components/portal/PortalTicketList';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +19,10 @@ export default async function PortalHomePage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-black tracking-tight">Meine Tickets</h1>
-        <p className="text-sm text-on-surface-variant mt-1">Nur Vorgänge, die Sie selbst eröffnet haben.</p>
-      </header>
+      <PortalPageHeader
+        title="Meine Tickets"
+        description="Nur Vorgänge, die Sie selbst eröffnet haben."
+      />
       <PortalTicketList
         tickets={tickets.map((ticket) => ({
           id: ticket.id,

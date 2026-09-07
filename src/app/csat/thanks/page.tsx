@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { VelaLogo } from '@/components/ui/VelaLogo';
 
 export const metadata: Metadata = {
   title: 'Thank You — VelaDesk',
@@ -42,46 +43,48 @@ export default async function CsatThanksPage({
   const isSuccess = status === 'success';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-800 dark:to-slate-700 px-8 py-6">
-          <h1 className="text-white text-lg font-semibold tracking-tight">VelaDesk</h1>
-          <p className="text-slate-400 text-xs mt-1">Customer Feedback</p>
+    <div className="flex min-h-screen items-center justify-center bg-surface p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-lowest shadow-xl">
+        <div className="flex items-center gap-3 bg-[#000e23] px-8 py-6">
+          <div className="h-10 w-10 overflow-hidden rounded-xl">
+            <VelaLogo variant="icon" className="h-full w-full" />
+          </div>
+          <div>
+            <h1 className="font-headline text-lg font-bold text-white">VelaDesk</h1>
+            <p className="mt-0.5 text-xs text-white/50">Customer Feedback</p>
+          </div>
         </div>
 
-        {/* Content */}
         <div className="px-8 py-10 text-center">
           {isSuccess ? (
             <>
-              <div className="text-6xl mb-4">{EMOJI_MAP[score] || '✅'}</div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+              <div className="mb-4 text-6xl">{EMOJI_MAP[score] || '✅'}</div>
+              <h2 className="mb-2 font-headline text-xl font-bold text-on-surface">
                 Thank You!
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+              <p className="text-sm leading-relaxed text-on-surface-variant">
                 {LABEL_MAP[score] || 'Your feedback has been recorded.'}
               </p>
-              <p className="text-slate-400 dark:text-slate-500 text-xs mt-6">
+              <p className="mt-6 text-xs text-on-surface-variant/70">
                 Your response helps us continuously improve our service.
               </p>
             </>
           ) : (
             <>
-              <div className="text-5xl mb-4">⚠️</div>
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+              <div className="mb-4 text-5xl">⚠️</div>
+              <h2 className="mb-2 font-headline text-xl font-bold text-on-surface">
                 Oops
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+              <p className="text-sm leading-relaxed text-on-surface-variant">
                 {ERROR_MESSAGES[reason] || 'Something went wrong.'}
               </p>
             </>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
-          <p className="text-slate-400 text-[11px] text-center">
-            Powered by VelaDesk — Modern Service Management
+        <div className="border-t border-outline-variant/15 bg-surface-container-low px-8 py-4">
+          <p className="text-center text-[11px] text-on-surface-variant">
+            © 2026 VelaDesk
           </p>
         </div>
       </div>

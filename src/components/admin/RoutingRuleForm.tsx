@@ -68,7 +68,7 @@ export const RoutingRuleForm = ({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-surface dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="px-6 py-4 border-b border-surface-container dark:border-white/5 flex justify-between items-center bg-surface-bright dark:bg-white/5">
           <h2 className="text-lg font-bold text-on-background dark:text-white">
             {initialData ? 'Edit Routing Rule' : 'New Routing Rule'}
@@ -96,7 +96,7 @@ export const RoutingRuleForm = ({
               placeholder="e.g. *@company.com or support@*"
               value={formData.emailPattern}
               onChange={e => setFormData({ ...formData, emailPattern: e.target.value })}
-              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
             <p className="mt-1.5 text-[10px] text-on-surface-variant dark:text-gray-500 italic">
               Use * for wildcards. Patterns are checked by priority (lowest number first).
@@ -111,7 +111,7 @@ export const RoutingRuleForm = ({
               required
               value={formData.workspaceId}
               onChange={e => setFormData({ ...formData, workspaceId: e.target.value })}
-              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               {workspaces.map(ws => (
                 <option key={ws.id} value={ws.id}>{ws.name}</option>
@@ -127,7 +127,7 @@ export const RoutingRuleForm = ({
               rows={2}
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-[#1a1f24] border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-xl text-sm text-on-background dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               placeholder="Why this rule exists..."
             />
           </div>

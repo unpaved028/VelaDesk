@@ -83,7 +83,7 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
 
   return (
     <div className="max-w-5xl">
-      <div className="bg-surface-container-low dark:bg-[#1a1f24] border border-surface-container dark:border-white/5 rounded-2xl p-6 mb-8 shadow-sm">
+      <div className="bg-surface-container-low dark:bg-surface-container border border-surface-container dark:border-white/5 rounded-2xl p-6 mb-8 shadow-sm">
         <h2 className="text-sm font-bold text-on-background dark:text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
           <Building2 className="w-4 h-4 text-primary" />
           <span>Register New Organization</span>
@@ -98,7 +98,7 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
               type="text" 
               value={name} 
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-xl text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-xl text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               placeholder="e.g. Acme Corp"
               required 
             />
@@ -109,7 +109,7 @@ export const TenantManager = ({ initialTenants }: { initialTenants: Tenant[] }) 
               type="text" 
               value={domain} 
               onChange={(e) => setDomain(e.target.value)}
-              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-xl text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full px-4 py-2.5 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-xl text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               placeholder="e.g. acme.com"
             />
           </div>

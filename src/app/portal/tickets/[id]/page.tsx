@@ -90,7 +90,7 @@ export default async function CustomerTicketPage({
               <span className="w-1 h-1 rounded-full bg-slate-200 dark:bg-white/10"></span>
               <span className="text-[11px] font-bold text-slate-400 dark:text-white/20 tracking-widest uppercase">{formattedTicket.workspace}</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-background dark:text-white leading-[1.1]">{formattedTicket.subject}</h1>
+            <h1 className="font-headline text-2xl font-bold tracking-tight text-on-surface md:text-3xl">{formattedTicket.subject}</h1>
           </div>
           
           <div className="flex flex-col items-start md:items-end gap-2 text-xs font-medium text-slate-500 dark:text-white/40">
@@ -107,7 +107,7 @@ export default async function CustomerTicketPage({
       </div>
 
       {/* Visual Timeline (v0.8.5) */}
-      <div className="bg-white/50 dark:bg-[#12181b] border border-surface-container dark:border-white/5 rounded-[40px] p-6 shadow-sm">
+      <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-lowest p-6">
         <TicketStatusStepper status={formattedTicket.status} />
       </div>
 
@@ -126,7 +126,7 @@ export default async function CustomerTicketPage({
             <div className={`flex flex-col gap-2 max-w-[80%] ${message.type === 'agent' ? 'items-start' : 'items-end'}`}>
               <div className={`p-7 rounded-[2.5rem] text-[15px] leading-relaxed shadow-sm ${
                 message.type === 'agent' 
-                  ? 'bg-white dark:bg-[#1a1f24] text-slate-900 dark:text-white rounded-tl-none border border-slate-100 dark:border-white/5' 
+                  ? 'bg-white dark:bg-surface-container text-slate-900 dark:text-white rounded-tl-none border border-slate-100 dark:border-white/5' 
                   : 'bg-slate-900 dark:bg-primary/20 text-white dark:text-white rounded-tr-none border border-primary/10'
               }`}>
                 <div className="whitespace-pre-wrap">{message.body}</div>
@@ -144,7 +144,7 @@ export default async function CustomerTicketPage({
       {/* Customer Reply Area */}
       <div className="mt-12 group">
         <div className="relative p-1 bg-gradient-to-b from-slate-200 to-transparent dark:from-white/10 dark:to-transparent rounded-[42px] transition-all focus-within:from-slate-400 dark:focus-within:from-white/30">
-          <div className="bg-white dark:bg-[#12181b] rounded-[40px] p-10 flex flex-col gap-8 shadow-2xl dark:shadow-none">
+          <div className="bg-white dark:bg-surface-container rounded-[40px] p-10 flex flex-col gap-8 shadow-2xl dark:shadow-none">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-on-background dark:text-white">Nachricht schreiben</h2>
               <div className="px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
@@ -155,7 +155,7 @@ export default async function CustomerTicketPage({
             <div className="relative">
               <textarea 
                 placeholder="Schreiben Sie hier Ihr Update..."
-                className="w-full h-40 bg-slate-50 dark:bg-[#0b0f10] border-none rounded-3xl p-6 text-[15px] focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-white/10 transition-all resize-none shadow-sm"
+                className="w-full h-40 bg-slate-50 dark:bg-surface border-none rounded-3xl p-6 text-[15px] focus:outline-none focus:ring-0 placeholder:text-slate-400 dark:placeholder:text-white/10 transition-all resize-none shadow-sm"
               ></textarea>
             </div>
 

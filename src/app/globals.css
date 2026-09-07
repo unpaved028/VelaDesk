@@ -6,8 +6,16 @@
 */
 
 :root {
-  --font-headline: "Manrope", sans-serif;
-  --font-body: "Inter", "Manrope", sans-serif;
+  --font-headline: var(--font-manrope), "Manrope", sans-serif;
+  --font-body: var(--font-inter), "Inter", "Manrope", sans-serif;
+}
+
+.font-headline {
+  font-family: var(--font-headline);
+}
+
+.font-body {
+  font-family: var(--font-body);
 }
 
 :root {

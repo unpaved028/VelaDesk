@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Globe, Mail, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { VelaLogo } from '@/components/ui/VelaLogo';
 
 function LoginContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
@@ -62,16 +63,15 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b0f10] text-white p-6 antialiased">
+    <div className="min-h-screen flex items-center justify-center bg-[#000e23] text-white p-6 antialiased">
       <div className="w-full max-w-md flex flex-col items-center gap-12">
-        {/* Branding Logo */}
         <div className="flex flex-col items-center gap-6">
-          <div className="w-16 h-16 rounded-3xl bg-white flex items-center justify-center shadow-2xl dark:shadow-none transition-transform hover:scale-110 duration-500">
-            <Globe className="w-8 h-8 text-[#0b0f10]" />
+          <div className="h-16 w-16 overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
+            <VelaLogo variant="icon" className="h-full w-full" />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <h1 className="text-4xl font-bold tracking-tight">VelaDesk</h1>
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest leading-loose">Service Management Cloud</p>
+            <h1 className="font-headline text-4xl font-bold tracking-tight">VelaDesk</h1>
+            <p className="text-xs font-bold uppercase tracking-widest leading-loose text-white/40">Service Management</p>
           </div>
         </div>
 
@@ -129,7 +129,7 @@ function LoginContent() {
                         await navigator.clipboard.writeText(magicLinkUrl);
                         setCopied(true);
                       }}
-                      className="h-10 bg-white text-[#0b0f10] rounded-xl text-[10px] font-bold uppercase tracking-widest"
+                      className="h-10 rounded-xl bg-white text-[10px] font-bold uppercase tracking-widest text-[#000e23]"
                     >
                       {copied ? 'Copied' : 'Copy sign-in link'}
                     </button>
@@ -179,7 +179,7 @@ function LoginContent() {
                 <button
                   onClick={handleSendMagicLink}
                   disabled={status === 'loading' || !email}
-                  className="w-full h-16 bg-white text-[#0b0f10] rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-white/90 hover:scale-[1.02] active:scale-95 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-white text-xs font-bold uppercase tracking-widest text-[#000e23] shadow-xl transition-all hover:scale-[1.02] hover:bg-white/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {status === 'loading' ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -203,7 +203,7 @@ function LoginContent() {
 
         {/* Footer info */}
         <div className="flex flex-col items-center gap-2 opacity-20 hover:opacity-100 transition-opacity duration-500">
-          <p className="text-[10px] uppercase font-bold tracking-widest">© 2024 VelaDesk Computing Systems</p>
+          <p className="text-[10px] uppercase font-bold tracking-widest">© 2026 VelaDesk</p>
         </div>
       </div>
     </div>
@@ -215,7 +215,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0b0f10]">
+        <div className="min-h-screen flex items-center justify-center bg-[#000e23]">
           <Loader2 className="w-8 h-8 animate-spin text-white/20" />
         </div>
       }

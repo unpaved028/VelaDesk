@@ -65,7 +65,7 @@ export const WorkspaceManager = ({ initialWorkspaces, tenants }: { initialWorksp
 
   return (
     <div className="max-w-4xl">
-      <div className="bg-surface-container-low dark:bg-[#1a1f24] border border-surface-container dark:border-white/5 rounded-xl p-6 mb-8">
+      <div className="bg-surface-container-low dark:bg-surface-container border border-surface-container dark:border-white/5 rounded-xl p-6 mb-8">
         <h2 className="text-sm font-semibold text-on-background dark:text-white mb-4 flex items-center gap-2">
           <Briefcase className="w-4 h-4" />
           <span>Create Workspace</span>
@@ -79,7 +79,7 @@ export const WorkspaceManager = ({ initialWorkspaces, tenants }: { initialWorksp
             <select 
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
               required
             >
               <option value="" disabled>Select Tenant</option>
@@ -94,7 +94,7 @@ export const WorkspaceManager = ({ initialWorkspaces, tenants }: { initialWorksp
               type="text" 
               value={name} 
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="e.g. IT-Support"
               required 
             />
@@ -104,7 +104,7 @@ export const WorkspaceManager = ({ initialWorkspaces, tenants }: { initialWorksp
             <select 
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-[#12181b] border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-3 py-2 bg-surface-container-lowest dark:bg-surface-container border border-surface-container dark:border-white/10 rounded-lg text-sm dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="ITSM">ITSM</option>
               <option value="ESM">ESM</option>

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +18,10 @@ export default async function PortalAssetsPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-black tracking-tight">Asset Übersicht</h1>
-        <p className="text-sm text-on-surface-variant mt-1">Geräte Ihres Mandanten.</p>
-      </header>
+      <PortalPageHeader
+        title="Asset Übersicht"
+        description="Geräte Ihres Mandanten."
+      />
       {assets.length === 0 ? (
         <p className="text-sm text-on-surface-variant">Keine Assets vorhanden.</p>
       ) : (

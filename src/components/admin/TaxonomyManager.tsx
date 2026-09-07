@@ -131,7 +131,7 @@ export const TaxonomyManager = ({ initialCategories, initialSLAs, tenants, works
     }
   };
 
-  const baseInputStyle = "w-full p-2 bg-surface-container-lowest dark:bg-[#0b0f10] border border-surface-container dark:border-white/10 rounded-md text-sm text-on-background dark:text-white pb-2 focus:outline-none focus:ring-2 focus:ring-primary";
+  const baseInputStyle = "w-full p-2 bg-surface-container-lowest dark:bg-surface border border-surface-container dark:border-white/10 rounded-md text-sm text-on-background dark:text-white pb-2 focus:outline-none focus:ring-2 focus:ring-primary";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -147,7 +147,7 @@ export const TaxonomyManager = ({ initialCategories, initialSLAs, tenants, works
 
         {error && <div className="mb-4 p-3 bg-red-500/10 text-red-600 rounded text-sm">{error}</div>}
 
-        <div className="bg-surface-container-low dark:bg-[#12181b] p-6 rounded-xl border border-surface-container dark:border-white/5 mb-8">
+        <div className="bg-surface-container-low dark:bg-surface-container p-6 rounded-xl border border-surface-container dark:border-white/5 mb-8">
           <form onSubmit={handleCreateCategory} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -222,7 +222,7 @@ export const TaxonomyManager = ({ initialCategories, initialSLAs, tenants, works
           <p className="text-xs text-on-surface-variant dark:text-gray-400 mt-1">Define target times for response and resolution.</p>
         </div>
 
-        <div className="bg-surface-container-low dark:bg-[#12181b] p-6 rounded-xl border border-surface-container dark:border-white/5 mb-8">
+        <div className="bg-surface-container-low dark:bg-surface-container p-6 rounded-xl border border-surface-container dark:border-white/5 mb-8">
           <form onSubmit={handleCreateSLA} className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <div>

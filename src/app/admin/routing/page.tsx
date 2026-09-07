@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { RoutingRuleList } from '@/components/admin/RoutingRuleList';
 import { RoutingRuleForm } from '@/components/admin/RoutingRuleForm';
 import { getRoutingRules } from '@/lib/actions/routingActions';
-import { Plus, Route, RefreshCcw } from 'lucide-react';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 // Note: In Phase 2 this will come from a dedicated workspace action
 import { PrismaClient } from '@prisma/client';
 
@@ -53,35 +53,30 @@ export default function RoutingManagementPage() {
 
   return (
     <div className="p-8 h-full overflow-y-auto custom-scrollbar">
-      <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Route className="w-5 h-5 text-primary dark:text-tertiary" />
-            <span className="text-xs font-bold text-primary dark:text-tertiary uppercase tracking-widest">Automation</span>
-          </div>
-          <h1 className="text-2xl font-bold text-on-background dark:text-white">Email Routing Rules</h1>
-          <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-1">
-            Manage how incoming emails are assigned to specific workspaces based on sender patterns.
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-           <button 
-            onClick={fetchData}
-            className="p-2.5 border border-surface-container dark:border-white/10 text-on-background dark:text-white rounded-xl hover:bg-surface-bright dark:hover:bg-white/5 transition-all"
-            title="Reload"
-          >
-            <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-sm font-bold hover:bg-slate-800 dark:hover:bg-gray-100 transition-all shadow-lg shadow-black/5"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Rule
-          </button>
-        </div>
-      </header>
+      <AdminPageHeader
+        title="Email Routing Rules"
+        description="Manage how incoming emails are assigned to specific workspaces based on sender patterns."
+        actions={
+          <>
+            <button
+              onClick={fetchData}
+              className="rounded-xl border border-outline-variant/20 p-2.5 text-on-surface transition-colors hover:bg-surface-container"
+              title="Reload"
+              type="button"
+            >
+              <span className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+            </button>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Add New Rule
+            </button>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center h-64 gap-3">

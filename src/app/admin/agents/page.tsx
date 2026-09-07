@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { AgentManager } from '@/components/admin/AgentManager';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { getAgents } from '@/lib/actions/agentActions';
 
 export const dynamic = 'force-dynamic';
@@ -16,12 +17,10 @@ export default async function AdminAgentsPage() {
   return (
     <div className="p-8 h-full overflow-y-auto">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-on-background dark:text-white">Agent Management</h1>
-          <p className="text-sm text-on-surface-variant dark:text-gray-400 mt-2">
-            Create and manage support staff accounts. Assign roles and tenants to control access.
-          </p>
-        </header>
+        <AdminPageHeader
+          title="Agent Management"
+          description="Create and manage support staff accounts. Assign roles and tenants to control access."
+        />
 
         <AgentManager 
           initialAgents={agents || []}

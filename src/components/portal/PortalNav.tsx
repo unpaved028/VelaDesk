@@ -10,6 +10,9 @@ export const PortalNav = ({ isCustomerAdmin }: PortalNavProps) => {
       <Link href="/portal" className="text-on-surface-variant hover:text-primary transition-colors">
         Meine Tickets
       </Link>
+      <Link href="/portal/catalog" className="text-on-surface-variant hover:text-primary transition-colors">
+        Katalog
+      </Link>
       {isCustomerAdmin ? (
         <>
           <Link href="/portal/company" className="text-on-surface-variant hover:text-primary transition-colors">

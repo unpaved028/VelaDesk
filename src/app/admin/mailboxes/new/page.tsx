@@ -40,19 +40,18 @@ export default function HybridMailboxWizard() {
   const [setupType, setSetupType] = useState<SetupType>(null);
   
   return (
-    <div className="flex-1 bg-surface dark:bg-[#0b0f10] p-8 overflow-y-auto custom-scrollbar">
-      <div className="max-w-4xl mx-auto">
+    <div className="custom-scrollbar flex-1 overflow-y-auto bg-surface-container-lowest p-8">
+      <div className="mx-auto max-w-4xl">
         
-        {/* Header */}
-        <div className="mb-10 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant/40 dark:text-on-surface/20 flex gap-2">
+        <div className="mb-6 flex gap-2 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
            <Link href="/admin/mailboxes" className="hover:text-primary transition-colors">Mailboxes</Link>
            <span>/</span>
            <span className="text-primary">New Hybrid Setup</span>
         </div>
 
         <div className="mb-12">
-          <h1 className="text-3xl font-bold text-on-background dark:text-white mb-2 tracking-tight">Postfach-Onboarding</h1>
-          <p className="text-on-surface-variant dark:text-on-surface/60">
+          <h1 className="mb-2 font-headline text-2xl font-bold tracking-tight text-on-surface">Postfach-Onboarding</h1>
+          <p className="text-sm text-on-surface-variant">
             Wählen Sie den gewünschten Pfad für die Anbindung Ihres Microsoft 365 Postfachs.
           </p>
         </div>
@@ -188,7 +187,7 @@ const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
           </div>
        </div>
 
-       <div className="bg-white dark:bg-[#12181b] rounded-[32px] border border-surface-container dark:border-white/5 p-8 md:p-12 shadow-sm">
+       <div className="bg-white dark:bg-surface-container rounded-[32px] border border-surface-container dark:border-white/5 p-8 md:p-12 shadow-sm">
           <div className="max-w-2xl space-y-6">
              <h2 className="text-2xl font-bold dark:text-white">PowerShell Setup</h2>
              <p className="text-on-surface-variant dark:text-on-surface/50 leading-relaxed">
@@ -363,7 +362,7 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
        </div>
 
        {/* Accordion 1: Guide */}
-       <div className={`overflow-hidden transition-all duration-300 bg-white dark:bg-[#12181b] rounded-[24px] border ${openSection === 'guide' ? 'border-primary/30' : 'border-surface-container dark:border-white/5'}`}>
+       <div className={`overflow-hidden transition-all duration-300 bg-white dark:bg-surface-container rounded-[24px] border ${openSection === 'guide' ? 'border-primary/30' : 'border-surface-container dark:border-white/5'}`}>
           <button 
             onClick={() => setOpenSection(openSection === 'guide' ? 'form' : 'guide')}
             className="w-full p-6 flex items-center justify-between text-left"
@@ -396,7 +395,7 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
        </div>
 
        {/* Accordion 2: Form */}
-       <div className={`overflow-hidden transition-all duration-300 bg-white dark:bg-[#12181b] rounded-[24px] border ${openSection === 'form' ? 'border-primary/30' : 'border-surface-container dark:border-white/5'}`}>
+       <div className={`overflow-hidden transition-all duration-300 bg-white dark:bg-surface-container rounded-[24px] border ${openSection === 'form' ? 'border-primary/30' : 'border-surface-container dark:border-white/5'}`}>
           <button 
             onClick={() => setOpenSection(openSection === 'form' ? 'guide' : 'form')}
             className="w-full p-6 flex items-center justify-between text-left"
@@ -534,7 +533,7 @@ const SelectionCard = ({
 }) => (
   <button 
     onClick={onClick}
-    className="group relative flex flex-col items-start p-8 bg-white dark:bg-[#12181b] rounded-[32px] border border-surface-container dark:border-white/5 hover:border-primary transition-all text-left shadow-sm hover:shadow-2xl hover:shadow-primary/5 active:scale-95"
+    className="group relative flex flex-col items-start p-8 bg-white dark:bg-surface-container rounded-[32px] border border-surface-container dark:border-white/5 hover:border-primary transition-all text-left shadow-sm hover:shadow-2xl hover:shadow-primary/5 active:scale-95"
   >
      {label && (
        <div className="absolute top-6 right-8 px-3 py-1 bg-primary/10 rounded-full text-[10px] font-black uppercase text-primary tracking-widest">
