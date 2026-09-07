@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Mail, Shield, Monitor, Smartphone, Laptop, Trash2, ArrowRight } from 'lucide-react';
+import { Mail, Shield, Monitor, Smartphone, Laptop, ArrowRight, User } from 'lucide-react';
 import { LetterAvatar } from '@/components/ui/LetterAvatar';
 import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 
