@@ -21,9 +21,7 @@ const globalForProvisioning = globalThis as unknown as {
 
 const setupTokenMap = globalForProvisioning.setupTokenMap ?? new Map<string, ProvisioningData>();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForProvisioning.setupTokenMap = setupTokenMap;
-}
+globalForProvisioning.setupTokenMap = setupTokenMap;
 
 const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
 

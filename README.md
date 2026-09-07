@@ -68,6 +68,6 @@ docker compose up -d --force-recreate veladesk-app
 
 - Docker and Docker Compose
 - About 512 MB RAM is enough for the app container
-- Optional: Microsoft 365 app registration with `Mail.ReadWrite.Shared` / `Mail.Send`
+- Optional: Microsoft 365 app registration with application permissions `Mail.ReadWrite` and `Mail.Send` (`public/scripts/setup-m365.ps1`)
 
 Do not deploy this as a Vercel serverless app. The runtime is one container plus SQLite.

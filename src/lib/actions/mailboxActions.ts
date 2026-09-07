@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { requireAdminContext } from '@/lib/auth/session';
 import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
 import { encryptSecret } from '../services/encryption';
@@ -16,7 +17,13 @@ export interface MailboxPayload {
 
 export async function getMailboxConfigs() {
   try {
+    const admin = await requireAdminContext();
+    if (!admin.ok) {
+      return { success: false, data: null, error: admin.error };
+    }
+
     const configs = await prisma.mailboxConfig.findMany({
+      where: { tenantId: admin.ctx.tenantId },
       include: {
         workspace: {
           include: { tenant: true }
@@ -40,8 +47,22 @@ export async function getMailboxConfigs() {
 
 export async function saveMailboxConfig(data: MailboxPayload) {
   try {
-    if (!data.workspaceId || !data.tenantId || !data.clientId || !data.msTenantId || !data.mailboxAddress) {
+    const admin = await requireAdminContext();
+    if (!admin.ok) {
+      return { success: false, data: null, error: admin.error };
+    }
+
+    const tenantId = admin.ctx.tenantId;
+    if (!data.workspaceId || !data.clientId || !data.msTenantId || !data.mailboxAddress) {
       return { success: false, data: null, error: 'All fields (Workspace, Mailbox Address, Tenant ID, Client ID, MS Tenant ID) are required.' };
+    }
+
+    const workspace = await prisma.workspace.findFirst({
+      where: { id: data.workspaceId, tenantId },
+      select: { id: true },
+    });
+    if (!workspace) {
+      return { success: false, data: null, error: 'Workspace not found for this tenant.' };
     }
 
     const unencryptedSecret = data.clientSecret?.trim();
@@ -59,7 +80,7 @@ export async function saveMailboxConfig(data: MailboxPayload) {
 
     // If user provided a new plain secret, we encrypt it.
     if (unencryptedSecret && unencryptedSecret !== '********') {
-      encryptedSecret = encryptSecret(unencryptedSecret, data.tenantId);
+      encryptedSecret = encryptSecret(unencryptedSecret, tenantId);
     }
 
     const upserted = await prisma.mailboxConfig.upsert({
@@ -71,7 +92,7 @@ export async function saveMailboxConfig(data: MailboxPayload) {
         msTenantId: data.msTenantId,
       },
       create: {
-        tenantId: data.tenantId,
+        tenantId,
         workspaceId: data.workspaceId,
         mailboxAddress: data.mailboxAddress,
         clientId: data.clientId,
@@ -91,9 +112,16 @@ export async function saveMailboxConfig(data: MailboxPayload) {
 
 export async function deleteMailboxConfig(id: string, tenantId: string) {
   try {
+    const admin = await requireAdminContext();
+    if (!admin.ok) {
+      return { success: false, data: null, error: admin.error };
+    }
+    if (tenantId !== admin.ctx.tenantId) {
+      return { success: false, data: null, error: 'Forbidden.' };
+    }
+
     await prisma.mailboxConfig.delete({
-      // Enforce tenant isolation
-      where: { id: id, tenantId }
+      where: { id: id, tenantId: admin.ctx.tenantId }
     });
 
     revalidatePath('/admin/mailboxes');

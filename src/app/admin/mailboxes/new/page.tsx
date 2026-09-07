@@ -109,11 +109,68 @@ export default function HybridMailboxWizard() {
  * OPTION A: AUTOMATED FLOW (PowerShell)
  */
 const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
+  const [mailbox, setMailbox] = useState('');
+  const [command, setCommand] = useState('');
   const [copied, setCopied] = useState(false);
-  const psCommand = "irm https://VelaDesk.io/setup-m365.ps1 | iex";
+  const [preparing, setPreparing] = useState(false);
+  const [bound, setBound] = useState(false);
+  const [error, setError] = useState('');
+  const [waiting, setWaiting] = useState(false);
+
+  const handlePrepare = async () => {
+    if (!mailbox.includes('@')) {
+      setError('Enter the shared mailbox address first.');
+      return;
+    }
+    setPreparing(true);
+    setError('');
+    try {
+      const { createMailboxSetupToken } = await import('@/lib/actions/mailboxSetupActions');
+      const result = await createMailboxSetupToken();
+      if (!result.success || !result.data) {
+        setError(result.error || 'Could not create a setup token.');
+        return;
+      }
+      const origin = window.location.origin;
+      const scriptUrl = `${origin}/scripts/setup-m365.ps1`;
+      const provisionUrl = `${origin}/api/mailboxes/provision`;
+      setCommand(
+        `irm ${scriptUrl} -OutFile setup-m365.ps1; powershell -ExecutionPolicy Bypass -File .\\setup-m365.ps1 -MailboxAddress "${mailbox.trim()}" -VelaDeskApiUrl "${provisionUrl}" -SetupToken "${result.data.token}"`
+      );
+      setWaiting(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not prepare the command.');
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!waiting || !mailbox) return;
+    let cancelled = false;
+    const tick = async () => {
+      const { getMailboxConfigs } = await import('@/lib/actions/mailboxActions');
+      const res = await getMailboxConfigs();
+      if (cancelled || !res.success || !res.data) return;
+      const match = res.data.some(
+        (config: { mailboxAddress?: string }) =>
+          (config.mailboxAddress || '').toLowerCase() === mailbox.trim().toLowerCase()
+      );
+      if (match) setBound(true);
+    };
+    const id = window.setInterval(() => {
+      void tick();
+    }, 4000);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [waiting, mailbox]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(psCommand);
+    if (!command) return;
+    navigator.clipboard.writeText(command);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -132,17 +189,39 @@ const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
        </div>
 
        <div className="bg-white dark:bg-[#12181b] rounded-[32px] border border-surface-container dark:border-white/5 p-8 md:p-12 shadow-sm">
-          <div className="max-w-2xl">
-             <h2 className="text-2xl font-bold dark:text-white mb-4">PowerShell One-Liner</h2>
-             <p className="text-on-surface-variant dark:text-on-surface/50 mb-8 leading-relaxed">
-                Kopieren Sie diesen Befehl und führen Sie ihn in Ihrer lokalen PowerShell aus. 
-                Das Skript führt Sie durch den Login und registriert VelaDesk automatisch in Ihrem Tenant.
+          <div className="max-w-2xl space-y-6">
+             <h2 className="text-2xl font-bold dark:text-white">PowerShell Setup</h2>
+             <p className="text-on-surface-variant dark:text-on-surface/50 leading-relaxed">
+                Das Skript legt die Entra-App an (Mail.ReadWrite + Mail.Send), testet die Inbox und schreibt die Werte nach VelaDesk. Token gilt 15 Minuten.
              </p>
 
+             <label className="block text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50">
+                Shared Mailbox
+                <input
+                  type="email"
+                  value={mailbox}
+                  onChange={(e) => setMailbox(e.target.value)}
+                  placeholder="support@domain.de"
+                  className="mt-2 w-full bg-surface-container-low dark:bg-white/[0.03] border border-surface-container dark:border-white/5 rounded-2xl px-5 py-4 text-sm dark:text-white placeholder:text-on-surface-variant/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+             </label>
+
+             <button
+               type="button"
+               onClick={() => void handlePrepare()}
+               disabled={preparing}
+               className="w-full py-4 bg-primary text-on-primary font-bold rounded-2xl disabled:opacity-50"
+             >
+               {preparing ? 'Preparing…' : 'Generate PowerShell command'}
+             </button>
+
+             {error ? <p className="text-sm text-red-500">{error}</p> : null}
+
+             {command ? (
              <div className="group relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative bg-surface-container-high dark:bg-black/40 rounded-2xl p-6 font-mono text-sm dark:text-primary flex items-center justify-between border border-surface-container dark:border-white/5 shadow-inner">
-                   <span className="truncate mr-4">{psCommand}</span>
+                <div className="relative bg-surface-container-high dark:bg-black/40 rounded-2xl p-6 font-mono text-xs dark:text-primary flex items-start justify-between gap-3 border border-surface-container dark:border-white/5 shadow-inner">
+                   <span className="break-all mr-2">{command}</span>
                    <button 
                      onClick={handleCopy}
                      className="shrink-0 p-3 bg-white dark:bg-white/5 rounded-xl border border-surface-container dark:border-white/10 hover:border-primary transition-all active:scale-90"
@@ -151,14 +230,27 @@ const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
                    </button>
                 </div>
              </div>
+             ) : null}
 
-             <div className="mt-12 flex items-center gap-6 p-6 bg-surface-container-low dark:bg-white/[0.02] rounded-2xl border border-surface-container dark:border-white/5">
+             {waiting && !bound ? (
+             <div className="flex items-center gap-6 p-6 bg-surface-container-low dark:bg-white/[0.02] rounded-2xl border border-surface-container dark:border-white/5">
                 <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 <div>
-                   <h4 className="text-sm font-bold dark:text-white">Warte auf Verbindung...</h4>
-                   <p className="text-xs text-on-surface-variant dark:text-on-surface/40">Sobald das Skript fertig ist, wird diese Seite automatisch aktualisiert.</p>
+                   <h4 className="text-sm font-bold dark:text-white">Waiting for the script…</h4>
+                   <p className="text-xs text-on-surface-variant dark:text-on-surface/40">This page updates when the mailbox is saved.</p>
                 </div>
              </div>
+             ) : null}
+
+             {bound ? (
+               <Link
+                 href="/admin/mailboxes"
+                 className="flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl"
+               >
+                 <CheckCircle2 className="w-5 h-5" />
+                 Mailbox saved — open Mailboxes
+               </Link>
+             ) : null}
           </div>
        </div>
     </div>
@@ -171,6 +263,10 @@ const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
 const ManualFlow = ({ onBack }: { onBack: () => void }) => {
   const [openSection, setOpenSection] = useState<'guide' | 'form'>('guide');
   const [formData, setFormData] = useState({ mailbox: '', tenant: '', client: '', secret: '' });
+  const [workspaceId, setWorkspaceId] = useState('');
+  const [workspaces, setWorkspaces] = useState<Array<{ id: string; name: string }>>([]);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState('');
   const [testState, setTestState] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testResult, setTestResult] = useState<{
     inboxDisplayName?: string;
@@ -179,6 +275,42 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
     errorCode?: string;
     errorMessage?: string;
   } | null>(null);
+
+  useEffect(() => {
+    void import('@/lib/actions/mailboxSetupActions').then(({ listMailboxSetupWorkspaces }) =>
+      listMailboxSetupWorkspaces().then((res) => {
+        if (res.success && res.data) {
+          setWorkspaces(res.data);
+          if (res.data.length === 1) setWorkspaceId(res.data[0].id);
+        }
+      })
+    );
+  }, []);
+
+  const handleSave = async () => {
+    if (!workspaceId) {
+      setSaveState('error');
+      setSaveError('Select a workspace.');
+      return;
+    }
+    setSaveState('saving');
+    setSaveError('');
+    const { saveMailboxConfig } = await import('@/lib/actions/mailboxActions');
+    const res = await saveMailboxConfig({
+      workspaceId,
+      tenantId: '',
+      mailboxAddress: formData.mailbox,
+      clientId: formData.client,
+      clientSecret: formData.secret,
+      msTenantId: formData.tenant,
+    });
+    if (res.success) {
+      setSaveState('saved');
+    } else {
+      setSaveState('error');
+      setSaveError(res.error || 'Save failed.');
+    }
+  };
 
   const handleTest = async () => {
     setTestState('testing');
@@ -249,7 +381,7 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
             <div className="p-8 pt-0 animate-in fade-in duration-300">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <MiniGuideItem icon={AppWindow} text="App-Registrierung anlegen (VelaDesk-Service)" />
-                  <MiniGuideItem icon={Mail} text="Graph Permission 'Mail.ReadWrite.Shared' vergeben" />
+                  <MiniGuideItem icon={Mail} text="Application permissions Mail.ReadWrite and Mail.Send" />
                   <MiniGuideItem icon={ShieldCheck} text="Admin-Consent für Permissions gewähren" />
                   <MiniGuideItem icon={Key} text="Client Secret generieren & Wert kopieren" />
                </div>
@@ -281,6 +413,19 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
           {openSection === 'form' && (
             <div className="p-8 pt-0 animate-in fade-in duration-300 space-y-6">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <label className="space-y-2 md:col-span-2">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50">Workspace</span>
+                    <select
+                      value={workspaceId}
+                      onChange={(e) => setWorkspaceId(e.target.value)}
+                      className="w-full bg-surface-container-low dark:bg-white/[0.03] border border-surface-container dark:border-white/5 rounded-2xl px-5 py-4 text-sm dark:text-white"
+                    >
+                      <option value="">Select workspace</option>
+                      {workspaces.map((workspace) => (
+                        <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                      ))}
+                    </select>
+                  </label>
                   <Input field="Shared Mailbox Address" value={formData.mailbox} placeholder="support@domain.de" onChange={(v: string) => setFormData({...formData, mailbox: v})} icon={Mail} />
                   <Input field="Tenant ID" value={formData.tenant} placeholder="Azure Directory ID" onChange={(v: string) => setFormData({...formData, tenant: v})} icon={Globe} />
                   <Input field="Client ID" value={formData.client} placeholder="App Application ID" onChange={(v: string) => setFormData({...formData, client: v})} icon={Fingerprint} />
@@ -331,6 +476,20 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
                           <p className="text-sm font-bold dark:text-white">{testResult.unreadItemCount}</p>
                        </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleSave()}
+                      disabled={saveState === 'saving' || saveState === 'saved'}
+                      className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl disabled:opacity-60"
+                    >
+                      {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save mailbox in VelaDesk'}
+                    </button>
+                    {saveState === 'error' ? <p className="text-xs text-red-500">{saveError}</p> : null}
+                    {saveState === 'saved' ? (
+                      <Link href="/admin/mailboxes" className="block text-center text-sm font-bold text-emerald-500">
+                        Open Mailboxes
+                      </Link>
+                    ) : null}
                  </div>
                )}
 

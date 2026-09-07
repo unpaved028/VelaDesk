@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Inbox, Eye, EyeOff, CheckCircle2, XCircle, KeyRound } from 'lucide-react';
+import { Plus, Trash2, Inbox, Eye, EyeOff, CheckCircle2, XCircle, KeyRound, PlugZap } from 'lucide-react';
 import { MailboxPayload, saveMailboxConfig, deleteMailboxConfig } from '../../lib/actions/mailboxActions';
+import { testSavedMailboxConnection } from '../../lib/actions/mailboxSetupActions';
 
 interface Workspace {
   id: string;
@@ -15,6 +16,7 @@ interface MailboxConfig {
   id: string;
   tenantId: string;
   workspaceId: string;
+  mailboxAddress: string;
   clientId: string;
   clientSecret: string; // Always redacted from server
   msTenantId: string;
@@ -41,6 +43,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
   const [mailboxAddress, setMailboxAddress] = useState('');
   const [msTenantId, setMsTenantId] = useState('');
   const [showSecret, setShowSecret] = useState(false);
+  const [testingId, setTestingId] = useState('');
 
   // Workspaces that already have a config should not appear in new-config dropdown
   const configuredWorkspaceIds = new Set(configs.map(c => c.workspaceId));
@@ -90,6 +93,7 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
         id: res.data.id,
         tenantId: res.data.tenantId,
         workspaceId: res.data.workspaceId,
+        mailboxAddress: res.data.mailboxAddress,
         clientId: res.data.clientId,
         clientSecret: '********',
         msTenantId: res.data.msTenantId,
@@ -110,6 +114,21 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
       setError(res.error || 'Failed to save mailbox configuration.');
     }
     setIsLoading(false);
+  };
+
+  const handleTestSaved = async (id: string) => {
+    setTestingId(id);
+    setError('');
+    setSuccess('');
+    const result = await testSavedMailboxConnection(id);
+    if (result.success) {
+      setSuccess(
+        `Graph OK for inbox "${result.inboxDisplayName ?? 'Inbox'}" (${result.unreadItemCount ?? 0} unread).`
+      );
+    } else {
+      setError(result.errorMessage || 'Graph connection test failed.');
+    }
+    setTestingId('');
   };
 
   const handleDelete = async (id: string, tenantId: string) => {
@@ -170,6 +189,18 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
             </div>
 
             <div>
+              <label className="block text-xs font-semibold text-on-surface dark:text-gray-300 mb-1">Microsoft Tenant ID *</label>
+              <input
+                type="text"
+                value={msTenantId}
+                onChange={e => setMsTenantId(e.target.value)}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                className={baseInputStyle}
+                required
+              />
+            </div>
+
+            <div>
               <label className="block text-xs font-semibold text-on-surface dark:text-gray-300 mb-1">Azure AD Client ID *</label>
               <input
                 type="text"
@@ -206,18 +237,6 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
               <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">⚠ This value is encrypted with AES-256-GCM (tenant-isolated) before storage. It cannot be retrieved in plaintext.</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-on-surface dark:text-gray-300 mb-1">Microsoft Tenant ID *</label>
-              <input
-                type="text"
-                value={msTenantId}
-                onChange={e => setMsTenantId(e.target.value)}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className={baseInputStyle}
-                required
-              />
-            </div>
-
             <button
               type="submit"
               disabled={isLoading || availableWorkspaces.length === 0}
@@ -248,31 +267,45 @@ export const MailboxManager = ({ initialConfigs, workspaces }: MailboxManagerPro
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-on-background dark:text-white flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-on-background dark:text-white flex items-center gap-2 min-w-0">
                       <Inbox className="w-4 h-4 text-primary shrink-0" />
-                      {config.workspace?.name || config.workspaceId}
+                      <span className="truncate">{config.mailboxAddress}</span>
                     </h4>
                     <div className="mt-2 space-y-1">
-                      <div className="text-[11px] text-on-surface-variant dark:text-gray-400 flex items-center gap-2">
+                      <div className="text-[11px] text-on-surface-variant dark:text-gray-400 flex flex-wrap items-center gap-2">
+                        <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded">
+                          {config.workspace?.name || config.workspaceId}
+                        </span>
                         <span className="px-1.5 py-0.5 bg-black/5 dark:bg-white/10 rounded">{tenantName}</span>
                         <span className={`px-1.5 py-0.5 rounded ${config.isActive ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
                           {config.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                       <div className="text-[11px] text-on-surface-variant/70 dark:text-gray-500 font-mono space-y-0.5">
+                        <div>Tenant ID: <span className="text-on-surface-variant dark:text-gray-400">{config.msTenantId}</span></div>
                         <div>Client ID: <span className="text-on-surface-variant dark:text-gray-400">{config.clientId}</span></div>
-                        <div>MS Tenant: <span className="text-on-surface-variant dark:text-gray-400">{config.msTenantId}</span></div>
                         <div>Secret: <span className="text-amber-600 dark:text-amber-400">●●●●●●●● (encrypted)</span></div>
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(config.id, config.tenantId)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-error hover:bg-error/10 rounded-md transition-all shrink-0"
-                    title="Delete mailbox configuration"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleTestSaved(config.id)}
+                      disabled={testingId === config.id}
+                      className="p-2 text-on-surface-variant hover:bg-primary/10 hover:text-primary rounded-md transition-all disabled:opacity-50"
+                      title="Test Graph connection"
+                    >
+                      <PlugZap className={`w-4 h-4 ${testingId === config.id ? 'animate-pulse' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(config.id, config.tenantId)}
+                      className="opacity-0 group-hover:opacity-100 p-2 text-error hover:bg-error/10 rounded-md transition-all"
+                      title="Delete mailbox configuration"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

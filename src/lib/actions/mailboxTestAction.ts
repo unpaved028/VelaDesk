@@ -113,7 +113,7 @@ export async function testM365Connection(
         return {
           success: false,
           errorCode: 'PERMISSION_DENIED',
-          errorMessage: `Zugriff verweigert (${inboxResponse.status}). Stellen Sie sicher, dass die App-Registrierung die Berechtigung "Mail.ReadWrite.Shared" besitzt und ein Admin-Consent erteilt wurde.`,
+          errorMessage: `Zugriff verweigert (${inboxResponse.status}). Die App braucht Application-Permissions Mail.ReadWrite und Mail.Send plus Admin-Consent.`,
         };
       }
 

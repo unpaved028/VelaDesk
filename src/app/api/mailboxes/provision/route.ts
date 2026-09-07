@@ -5,20 +5,72 @@ import { z } from 'zod';
 import { provisioningCache } from '@/lib/services/provisioningCache';
 import { encryptSecret } from '@/lib/services/encryption';
 
-// Schema validation for the incoming payload
 const ProvisionPayloadSchema = z.object({
-  setupToken: z.string().min(1, 'Setup token is required'),
+  setupToken: z.string().min(1).optional(),
   mailboxAddress: z.string().email('Invalid email address'),
   msTenantId: z.string().min(1, 'Microsoft Tenant ID is required'),
   clientId: z.string().min(1, 'Client ID is required'),
   clientSecret: z.string().min(1, 'Client Secret is required'),
 });
 
+interface ProvisionTarget {
+  tenantId: string;
+  workspaceId: string;
+}
+
+interface ProvisionedMailbox {
+  id: string;
+  mailboxAddress: string;
+  message: string;
+}
+
+/**
+ * Token path: admin UI minted a short-lived one-time token.
+ * Bootstrap path: first mailbox on a single-workspace instance.
+ * Why bootstrap exists: staff login is Magic Link, and Magic Link mail
+ * needs this mailbox — requiring an admin session here is a deadlock.
+ */
+async function resolveProvisionTarget(
+  setupToken: string | undefined
+): Promise<{ target: ProvisionTarget } | { error: string; status: number }> {
+  if (setupToken) {
+    const provisioningData = provisioningCache.consumeToken(setupToken);
+    if (!provisioningData) {
+      return { error: 'Setup token is invalid or has expired', status: 403 };
+    }
+    return {
+      target: {
+        tenantId: provisioningData.tenantId,
+        workspaceId: provisioningData.workspaceId,
+      },
+    };
+  }
+
+  const workspaces = await prisma.workspace.findMany({
+    select: { id: true, tenantId: true },
+    take: 2,
+  });
+
+  // Single-workspace instances may create or refresh the mailbox without a token.
+  // The script posts here after Entra setup; a dead token UI must not block that.
+  if (workspaces.length !== 1) {
+    return {
+      error: 'Bootstrap provision requires exactly one workspace. Sign in and save the mailbox under Admin, or pass a setup token.',
+      status: 403,
+    };
+  }
+
+  return {
+    target: {
+      tenantId: workspaces[0].tenantId,
+      workspaceId: workspaces[0].id,
+    },
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-
-    // 1. Validate payload structure
     const validation = ProvisionPayloadSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json<ApiResponse<null>>(
@@ -32,37 +84,30 @@ export async function POST(request: Request) {
     }
 
     const { setupToken, mailboxAddress, msTenantId, clientId, clientSecret } = validation.data;
-
-    // 2. Validate token against the memory cache
-    const provisioningData = provisioningCache.consumeToken(setupToken);
-    
-    if (!provisioningData) {
+    const resolved = await resolveProvisionTarget(setupToken);
+    if ('error' in resolved) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
           data: null,
-          error: 'Setup token is invalid or has expired',
+          error: resolved.error,
         },
-        { status: 403 }
+        { status: resolved.status }
       );
     }
 
-    const { tenantId, workspaceId } = provisioningData;
-
-    // 3. Encrypt the secret according to SOP-05! (VERY IMPORTANT)
+    const { tenantId, workspaceId } = resolved.target;
     const encryptedSecret = encryptSecret(clientSecret, tenantId);
 
-    // 4. Create or Update the MailboxConfig
-    // Enforcing tenant isolation by querying workspace ownership first
     const workspace = await prisma.workspace.findFirst({
       where: {
         id: workspaceId,
-        tenantId: tenantId
-      }
+        tenantId,
+      },
     });
 
     if (!workspace) {
-       return NextResponse.json<ApiResponse<null>>(
+      return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
           data: null,
@@ -72,17 +117,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Upsert the Mailbox Config
     const config = await prisma.mailboxConfig.upsert({
       where: {
-        workspaceId: workspaceId,
+        workspaceId,
       },
       update: {
         mailboxAddress,
         clientId,
-        clientSecret: encryptedSecret, // Using the encrypted one
+        clientSecret: encryptedSecret,
         msTenantId,
-        isActive: true, // Auto-activate
+        isActive: true,
       },
       create: {
         tenantId,
@@ -92,16 +136,20 @@ export async function POST(request: Request) {
         clientSecret: encryptedSecret,
         msTenantId,
         isActive: true,
-      }
+      },
     });
 
-    return NextResponse.json<ApiResponse<any>>(
+    console.info(
+      `[mailboxProvision] Bound ${config.mailboxAddress} to workspace ${workspaceId} (${setupToken ? 'token' : 'bootstrap'})`
+    );
+
+    return NextResponse.json<ApiResponse<ProvisionedMailbox>>(
       {
         success: true,
         data: {
           id: config.id,
           mailboxAddress: config.mailboxAddress,
-          message: 'Mailbox configuration successfully provisioned.'
+          message: 'Mailbox configuration successfully provisioned.',
         },
         error: null,
       },
@@ -109,11 +157,7 @@ export async function POST(request: Request) {
     );
   } catch (error: unknown) {
     console.error('Provisioning error:', error);
-    let errorMessage = 'Internal Server Error';
-    
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
 
     return NextResponse.json<ApiResponse<null>>(
       {
