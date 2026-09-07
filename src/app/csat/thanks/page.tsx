@@ -47,7 +47,7 @@ export default async function CsatThanksPage({
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-lowest shadow-xl">
         <div className="flex items-center gap-3 bg-[#000e23] px-8 py-6">
           <div className="h-10 w-10 overflow-hidden rounded-xl">
-            <VelaLogo variant="icon" className="h-full w-full" />
+            <VelaLogo variant="icon" tone="dark" className="h-full w-full" />
           </div>
           <div>
             <h1 className="font-headline text-lg font-bold text-white">VelaDesk</h1>

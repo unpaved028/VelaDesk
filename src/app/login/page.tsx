@@ -67,7 +67,7 @@ function LoginContent() {
       <div className="w-full max-w-md flex flex-col items-center gap-12">
         <div className="flex flex-col items-center gap-6">
           <div className="h-16 w-16 overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
-            <VelaLogo variant="icon" className="h-full w-full" />
+            <VelaLogo variant="icon" tone="dark" className="h-full w-full" />
           </div>
           <div className="flex flex-col items-center gap-2">
             <h1 className="font-headline text-4xl font-bold tracking-tight">VelaDesk</h1>

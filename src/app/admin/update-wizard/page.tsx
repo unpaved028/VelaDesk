@@ -50,7 +50,7 @@ export default function UpdateWizardPage() {
       <div className="w-full max-w-2xl relative">
         <div className="mb-8 flex justify-center">
           <div className="h-12 w-12 overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
-            <VelaLogo variant="icon" className="h-full w-full" />
+            <VelaLogo variant="icon" tone="dark" className="h-full w-full" />
           </div>
         </div>
         

@@ -112,7 +112,7 @@ export default function SetupWizardPage() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="mb-8 inline-flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-primary-fixed/20">
-            <VelaLogo variant="icon" className="h-full w-full" />
+            <VelaLogo variant="icon" tone="dark" className="h-full w-full" />
           </div>
           <h1 className="mb-2 font-headline text-3xl font-bold tracking-tight">
             Welcome to VelaDesk
