@@ -1,7 +1,11 @@
 import { prisma } from '@/lib/db/prisma';
 import { matchEmailPattern } from '@/lib/routing/emailPattern';
 import { GraphEmail } from '@/types/graph';
-import { extractTicketIdFromSubject } from './ticketRef';
+import {
+  extractTicketIdFromSubject,
+  extractTicketIdFromText,
+  normalizeSubject,
+} from './ticketRef';
 
 // --- Routing Result ---
 // Tracks which stage resolved the workspace so we can tag the ticket accordingly.
@@ -50,38 +54,19 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
 
   for (const email of emails) {
     const senderAddress = email.from?.emailAddress?.address || 'unknown@example.com';
-    const existingTicketId = extractTicketIdFromSubject(email.subject);
+    const inboundBody = inboundText(email);
+    const existing = await findExistingTicket(email, {
+      tenantId,
+      senderAddress,
+    });
 
-    if (existingTicketId) {
-      const existing = await prisma.ticket.findFirst({
-        where: { id: existingTicketId, tenantId },
-        select: { id: true, status: true },
+    if (existing) {
+      await appendInboundReply(existing, {
+        body: inboundBody,
+        senderAddress,
+        conversationId: email.conversationId,
       });
-
-      if (existing) {
-        // Reply to our public mail — append, do not open a second ticket.
-        await prisma.message.create({
-          data: {
-            ticketId: existing.id,
-            body: email.bodyPreview || 'No Content',
-            isInternal: false,
-            authorId: senderAddress,
-          },
-        });
-        console.info(
-          `[ticketParser] Appended inbound reply to ticket ${existing.id} from ${senderAddress}`
-        );
-
-        // Closed/resolved threads that get a customer reply must reappear in the queue.
-        if (existing.status === 'RESOLVED' || existing.status === 'CLOSED') {
-          await prisma.ticket.update({
-            where: { id: existing.id },
-            data: { status: 'OPEN' },
-          });
-        }
-
-        continue;
-      }
+      continue;
     }
 
     // --- Multi-Stage Routing ---
@@ -100,9 +85,10 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
       tenantId,
       workspaceId: routing.workspaceId,
       subject: email.subject || 'No Subject',
-      description: email.bodyPreview || 'No Content',
+      description: inboundBody,
       requesterId: senderAddress,
       tags,
+      graphConversationId: email.conversationId || null,
       slaResponseDeadline,
       slaResolutionDeadline
     };
@@ -166,5 +152,96 @@ function buildTags(routing: RoutingResult): string {
   tags.push(routing.matchStage);
 
   return tags.join(',');
+}
+
+function inboundText(email: GraphEmail): string {
+  const content = email.body?.content?.trim();
+  if (content) {
+    const type = email.body?.contentType?.toLowerCase() ?? '';
+    if (type === 'text' || type === 'text/plain') return content;
+    const stripped = content
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .trim();
+    if (stripped) return stripped;
+  }
+  return email.bodyPreview || 'No Content';
+}
+
+async function findExistingTicket(
+  email: GraphEmail,
+  ctx: { tenantId: string; senderAddress: string }
+) {
+  const tokenId =
+    extractTicketIdFromSubject(email.subject) ?? extractTicketIdFromText(inboundText(email));
+
+  if (tokenId) {
+    const byToken = await prisma.ticket.findFirst({
+      where: { id: tokenId, tenantId: ctx.tenantId },
+      select: { id: true, status: true, graphConversationId: true },
+    });
+    if (byToken) return byToken;
+  }
+
+  if (email.conversationId) {
+    const byThread = await prisma.ticket.findFirst({
+      where: { tenantId: ctx.tenantId, graphConversationId: email.conversationId },
+      select: { id: true, status: true, graphConversationId: true },
+    });
+    if (byThread) return byThread;
+  }
+
+  const normalized = normalizeSubject(email.subject);
+  if (normalized.length < 3) return null;
+
+  const senderTickets = await prisma.ticket.findMany({
+    where: {
+      tenantId: ctx.tenantId,
+      OR: [
+        { requesterId: ctx.senderAddress },
+        { requesterId: ctx.senderAddress.toLowerCase() },
+      ],
+    },
+    select: { id: true, status: true, subject: true, graphConversationId: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return senderTickets.find((ticket) => normalizeSubject(ticket.subject) === normalized) ?? null;
+}
+
+async function appendInboundReply(
+  existing: { id: number; status: string; graphConversationId?: string | null },
+  input: { body: string; senderAddress: string; conversationId?: string }
+) {
+  await prisma.message.create({
+    data: {
+      ticketId: existing.id,
+      body: input.body,
+      isInternal: false,
+      authorId: input.senderAddress,
+    },
+  });
+  console.info(
+    `[ticketParser] Appended inbound reply to ticket ${existing.id} from ${input.senderAddress}`
+  );
+
+  const data: { status?: 'OPEN'; graphConversationId?: string } = {};
+  if (existing.status === 'RESOLVED' || existing.status === 'CLOSED') {
+    data.status = 'OPEN';
+  }
+  if (input.conversationId && !existing.graphConversationId) {
+    data.graphConversationId = input.conversationId;
+  }
+  if (Object.keys(data).length > 0) {
+    await prisma.ticket.update({
+      where: { id: existing.id },
+      data,
+    });
+  }
 }
 

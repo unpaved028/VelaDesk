@@ -34,6 +34,11 @@ export const initCronJobs = () => {
     }
   });
 
+  // Do not wait for the first */2 tick after a deploy/recreate.
+  void runGraphSync().catch((error) => {
+    console.error('[Cron] Initial Graph sync failed:', error);
+  });
+
   // Offsite backup: schedule from SystemConfig, default 03:00 daily
   void startBackupSchedule();
 };

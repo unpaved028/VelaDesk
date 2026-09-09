@@ -59,13 +59,19 @@ export class GraphApiHelper {
 
   public async fetchUnreadEmails(mailbox: string): Promise<GraphEmail[]> {
     const token = await this.getAccessToken();
-        // toRecipients needed for multi-stage routing (0.7.4): To: → From: → Catch-All
-    const url = `https://graph.microsoft.com/v1.0/users/${mailbox}/messages?$filter=isRead eq false&$select=subject,bodyPreview,from,toRecipients,id`;
+    const user = encodeURIComponent(mailbox);
+    // toRecipients for routing; conversationId + body for reply threading
+    const url =
+      `https://graph.microsoft.com/v1.0/users/${user}/messages` +
+      `?$filter=isRead eq false` +
+      `&$select=subject,bodyPreview,body,from,toRecipients,id,conversationId` +
+      `&$top=50`;
 
     try {
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          Prefer: 'outlook.body-content-type="text"',
         }
       });
 
@@ -84,7 +90,7 @@ export class GraphApiHelper {
 
   public async markAsRead(mailbox: string, messageId: string): Promise<void> {
     const token = await this.getAccessToken();
-    const url = `https://graph.microsoft.com/v1.0/users/${mailbox}/messages/${messageId}`;
+    const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(messageId)}`;
 
     try {
       const response = await fetch(url, {

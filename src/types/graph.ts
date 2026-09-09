@@ -18,10 +18,17 @@ export interface GraphEmailAddress {
   };
 }
 
+export interface GraphEmailBody {
+  contentType: string;
+  content: string;
+}
+
 export interface GraphEmail {
   id: string;
   subject: string; // Will map to Ticket title
   bodyPreview: string; // Will map to Ticket description
+  body?: GraphEmailBody;
+  conversationId?: string;
   from: GraphEmailAddress; // Will map to customer info
   toRecipients?: GraphEmailAddress[]; // Used for routing: which mailbox received this
 }
