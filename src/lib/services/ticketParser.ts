@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { matchEmailPattern } from '@/lib/routing/emailPattern';
 import { GraphEmail } from '@/types/graph';
+import { extractTicketIdFromSubject } from './ticketRef';
 
 // --- Routing Result ---
 // Tracks which stage resolved the workspace so we can tag the ticket accordingly.
@@ -49,7 +50,40 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
 
   for (const email of emails) {
     const senderAddress = email.from?.emailAddress?.address || 'unknown@example.com';
-    
+    const existingTicketId = extractTicketIdFromSubject(email.subject);
+
+    if (existingTicketId) {
+      const existing = await prisma.ticket.findFirst({
+        where: { id: existingTicketId, tenantId },
+        select: { id: true, status: true },
+      });
+
+      if (existing) {
+        // Reply to our public mail — append, do not open a second ticket.
+        await prisma.message.create({
+          data: {
+            ticketId: existing.id,
+            body: email.bodyPreview || 'No Content',
+            isInternal: false,
+            authorId: senderAddress,
+          },
+        });
+        console.info(
+          `[ticketParser] Appended inbound reply to ticket ${existing.id} from ${senderAddress}`
+        );
+
+        // Closed/resolved threads that get a customer reply must reappear in the queue.
+        if (existing.status === 'RESOLVED' || existing.status === 'CLOSED') {
+          await prisma.ticket.update({
+            where: { id: existing.id },
+            data: { status: 'OPEN' },
+          });
+        }
+
+        continue;
+      }
+    }
+
     // --- Multi-Stage Routing ---
     const routing = resolveRouting(email, rules, {
       fallbackWorkspaceId,
