@@ -1,14 +1,9 @@
 #!/bin/sh
-# Use the Prisma CLI baked into the image. `npx prisma` downloads latest
-# (wrong major) and fails as user nextjs (HOME=/nonexistent).
+# SQLite migrations without the Prisma CLI. Prisma 6's CLI needs effect/c12
+# (not in the standalone image); npx would pull the wrong major as nextjs.
+set -e
 echo "Running database migrations..."
-if [ -x /app/node_modules/.bin/prisma ]; then
-  /app/node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma
-elif [ -f /app/node_modules/prisma/build/index.js ]; then
-  node /app/node_modules/prisma/build/index.js migrate deploy --schema=/app/prisma/schema.prisma
-else
-  echo "Prisma CLI not found in image; skipping migrate deploy."
-fi
+node --experimental-sqlite /app/scripts/apply-sqlite-migrations.cjs
 
 echo "Starting VelaDesk..."
 exec "$@"

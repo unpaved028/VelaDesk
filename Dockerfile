@@ -50,11 +50,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Entrypoint kopieren
 COPY --chown=nextjs:nodejs entrypoint.sh ./
+COPY --chown=nextjs:nodejs scripts/apply-sqlite-migrations.cjs ./scripts/apply-sqlite-migrations.cjs
 RUN chmod +x entrypoint.sh
 
 USER nextjs
