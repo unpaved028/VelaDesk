@@ -3,7 +3,7 @@
 # (not in the standalone image); npx would pull the wrong major as nextjs.
 set -e
 echo "Running database migrations..."
-node --experimental-sqlite /app/scripts/apply-sqlite-migrations.cjs
+node --experimental-sqlite /app/scripts/apply-sqlite-migrations.mjs
 
 echo "Starting VelaDesk..."
 exec "$@"

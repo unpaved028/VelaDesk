@@ -8,13 +8,15 @@
  * Checksums match `prisma migrate deploy` (SHA-256 of migration.sql) so a
  * later CLI run will not rewrite history.
  */
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const { DatabaseSync } = require('node:sqlite');
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
 
+const here = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = process.env.VELADESK_MIGRATIONS_DIR
-  || path.join(__dirname, '..', 'prisma', 'migrations');
+  || path.join(here, '..', 'prisma', 'migrations');
 
 function resolveDatabasePath() {
   const url = process.env.DATABASE_URL || 'file:./data/dev.db';
