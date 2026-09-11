@@ -11,6 +11,19 @@ A helpdesk that you host yourself: ticket queue, customer portal (Magic Link), s
 
 It is not Zammad or GLPI. The point is a first workday on modest hardware, not a full ITIL suite.
 
+## Self-hosted ITSM under 1 GB RAM
+
+Zammad and GLPI are complete helpdesks. They expect a database server, background workers, and commonly 2–4 GB RAM before the queue is useful. VelaDesk is the other end of that trade: one Docker container, SQLite on disk, about 512 MB for the app.
+
+Use it when a small IT team or MSP wants tickets, a Magic Link portal, and optional Microsoft 365 mail on a Raspberry Pi or a small Windows box. Skip it if you need a CMDB, a software catalog, or a full ITIL suite.
+
+| | VelaDesk | Typical self-hosted ITSM |
+| --- | --- | --- |
+| Host | Raspberry Pi or small Windows Server | Dedicated VM, 2–4 GB RAM common |
+| Data | SQLite in the container volume | Postgres or MySQL beside the app |
+| First login | Magic Link; Microsoft Entra optional | Local users or SSO first |
+| Mail | Microsoft Graph when a mailbox exists | IMAP/SMTP or a separate mail stack |
+
 ## Demo
 
 [90-second walkthrough](public/demo/veladesk-90s.mp4): install on a Pi, open the public home page, sign in with a Magic Link, then open the seeded ticket queue.
