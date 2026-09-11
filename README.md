@@ -45,8 +45,8 @@ Then open `http://localhost:3000`. Config lives in `C:\VelaDesk\`.
 
 1. Open the setup wizard (`/setup` until an admin exists).
 2. Create the first SUPER_ADMIN.
-3. Choose **MSP Best Practices** to seed Hardware/Software/Netzwerk/Account, P1/P2/Standard SLAs, and one sample ticket — or **Lean Start** for an empty system.
-4. Sign in at `/login` with a Magic Link.
+3. Choose **MSP Best Practices** to seed Hardware/Software/Netzwerk/Account, P1/P2/Standard SLAs, and three sample tickets — or **Lean Start** for an empty system.
+4. Open `/` (public demo) and sign in at `/login` with a Magic Link. Microsoft Entra is not required.
 
 Until Microsoft Entra is connected, staff use the same Magic Link as the portal. If no mailbox is configured, the login page shows a **copyable** link. Nothing is emailed, and the UI does not claim otherwise.
 

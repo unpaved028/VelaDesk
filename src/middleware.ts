@@ -12,7 +12,7 @@ import { publicAbsoluteUrl, isHttpsPublicRequest } from '@/lib/http/publicOrigin
  * Three protection layers:
  * 1. /setup interceptor → Redirects uninitialized systems to setup wizard
  * 2. /admin/* → Requires SUPER_ADMIN or ADMIN (JWT session role)
- * 3. / and /tickets → Requires authenticated staff session
+ * 3. /tickets → Requires authenticated staff session. `/` is the public demo.
  * 4. /portal/* → Requires valid portal session JWT (v0.8.3)
  *
  * NOTE: Next.js Edge Middleware cannot use Node.js `crypto` module directly.
@@ -93,7 +93,7 @@ export async function middleware(request: NextRequest) {
   const signInUrl = unauthenticatedSignInPath(staffBootstrapEnabled);
 
   // ─── Agent Workspace Protection ──────────────────────────────────
-  const isAgentApp = path === '/' || path.startsWith('/tickets');
+  const isAgentApp = path.startsWith('/tickets');
   if (isAgentApp && !bypass) {
     if (hasNextAuthSession) {
       try {

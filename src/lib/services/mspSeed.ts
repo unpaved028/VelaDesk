@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import {
   MSP_CATEGORIES,
-  MSP_SAMPLE_TICKET_SUBJECT,
+  MSP_SAMPLE_TICKETS,
   MSP_SLAS,
   MSP_WORKSPACE_NAME,
 } from './mspSeedCatalog';
@@ -11,7 +11,7 @@ export interface MspSeedResult {
   alreadySeeded: boolean;
   createdCategories: number;
   createdSlas: number;
-  createdSampleTicket: boolean;
+  createdSampleTickets: number;
 }
 
 /**
@@ -21,7 +21,7 @@ export interface MspSeedResult {
 export async function seedBestPracticesForTenant(tenantId: string): Promise<MspSeedResult> {
   let createdCategories = 0;
   let createdSlas = 0;
-  let createdSampleTicket = false;
+  let createdSampleTickets = 0;
 
   let workspace = await prisma.workspace.findFirst({
     where: { tenantId, name: MSP_WORKSPACE_NAME },
@@ -85,38 +85,39 @@ export async function seedBestPracticesForTenant(tenantId: string): Promise<MspS
     });
   }
 
-  const sample = await prisma.ticket.findFirst({
-    where: { tenantId, subject: MSP_SAMPLE_TICKET_SUBJECT },
-    select: { id: true },
-  });
-  if (!sample) {
+  for (const sample of MSP_SAMPLE_TICKETS) {
+    const existing = await prisma.ticket.findFirst({
+      where: { tenantId, subject: sample.subject },
+      select: { id: true },
+    });
+    if (existing) continue;
+
     const now = new Date();
     await prisma.ticket.create({
       data: {
         tenantId,
         workspaceId: workspace.id,
-        subject: MSP_SAMPLE_TICKET_SUBJECT,
-        description:
-          'Sample incident from MSP Best Practices. Reply here to see the agent workspace. No mailbox is required.',
+        subject: sample.subject,
+        description: sample.description,
         requesterId: 'sample@veladesk.local',
         status: 'NEW',
-        priority: 'MEDIUM',
-        itilType: 'INCIDENT',
-        slaResponseDeadline: new Date(now.getTime() + 4 * 60 * 60 * 1000),
-        slaResolutionDeadline: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+        priority: sample.priority,
+        itilType: sample.itilType,
+        slaResponseDeadline: new Date(now.getTime() + sample.responseHours * 60 * 60 * 1000),
+        slaResolutionDeadline: new Date(now.getTime() + sample.resolutionHours * 60 * 60 * 1000),
       },
     });
-    createdSampleTicket = true;
+    createdSampleTickets += 1;
   }
 
   const alreadySeeded =
-    createdCategories === 0 && createdSlas === 0 && createdSampleTicket === false;
+    createdCategories === 0 && createdSlas === 0 && createdSampleTickets === 0;
 
   return {
     workspaceId: workspace.id,
     alreadySeeded,
     createdCategories,
     createdSlas,
-    createdSampleTicket,
+    createdSampleTickets,
   };
 }

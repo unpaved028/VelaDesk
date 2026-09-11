@@ -297,7 +297,7 @@ export default function SetupWizardPage() {
                       </div>
                       <div>
                         <div className="text-sm font-bold mb-1">MSP Best Practices</div>
-                        <div className="text-[10px] text-on-surface-variant/40 leading-relaxed font-medium">Pre-fill database with ITIL categories, SLAs, and standard workflows.</div>
+                        <div className="text-[10px] text-on-surface-variant/40 leading-relaxed font-medium">Pre-fill categories, SLAs, and three sample tickets. Entra is not required.</div>
                       </div>
                     </button>
 
