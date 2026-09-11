@@ -11,6 +11,10 @@ A helpdesk that you host yourself: ticket queue, customer portal (Magic Link), s
 
 It is not Zammad or GLPI. The point is a first workday on modest hardware, not a full ITIL suite.
 
+## Demo
+
+[90-second walkthrough](public/demo/veladesk-90s.mp4): install on a Pi, open the public home page, sign in with a Magic Link, then open the seeded ticket queue.
+
 ## Screenshots
 
 | Login | Admin |
