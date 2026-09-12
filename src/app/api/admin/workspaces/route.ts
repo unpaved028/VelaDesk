@@ -1,25 +1,22 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db/prisma';
+import { requireAdminContext } from '@/lib/auth/session';
 
-const prisma = new PrismaClient();
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const tenantId = searchParams.get('tenantId');
-
-  if (!tenantId) {
-    return NextResponse.json({ success: false, data: null, error: "Tenant ID required" }, { status: 400 });
+export async function GET() {
+  const admin = await requireAdminContext();
+  if (!admin.ok) {
+    return NextResponse.json({ success: false, data: null, error: admin.error }, { status: 401 });
   }
 
   try {
     const workspaces = await prisma.workspace.findMany({
-      where: { tenantId },
+      where: { tenantId: admin.ctx.tenantId },
       select: { id: true, name: true },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
 
     return NextResponse.json({ success: true, data: workspaces, error: null });
-  } catch (error) {
-    return NextResponse.json({ success: false, data: null, error: "Database error" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ success: false, data: null, error: 'Database error' }, { status: 500 });
   }
 }

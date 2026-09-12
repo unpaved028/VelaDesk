@@ -6,6 +6,8 @@ import {
   extractTicketIdFromText,
   normalizeSubject,
 } from './ticketRef';
+import { ensureCustomer } from './customers';
+import { sendTicketAckMail } from './emailSender';
 
 // --- Routing Result ---
 // Tracks which stage resolved the workspace so we can tag the ticket accordingly.
@@ -95,6 +97,20 @@ export const parseAndSaveTickets = async (options: ParseTicketsOptions) => {
 
     const newTicket = await prisma.ticket.create({
       data: ticketData,
+    });
+
+    const senderName = email.from?.emailAddress?.name || senderAddress;
+    await ensureCustomer({
+      tenantId,
+      email: senderAddress,
+      name: senderName,
+    });
+    await sendTicketAckMail({
+      ticketId: newTicket.id,
+      tenantId,
+      workspaceId: routing.workspaceId,
+      requesterId: senderAddress,
+      subject: newTicket.subject,
     });
 
     createdTickets.push(newTicket);

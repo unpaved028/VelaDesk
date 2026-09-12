@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { submitTicketReply } from '@/app/actions/ticketActions';
+import { listMacros } from '@/lib/actions/macroActions';
 
 interface ReplyBoxProps {
   ticketId: number;
@@ -13,6 +14,15 @@ export const ReplyBox = ({ ticketId }: ReplyBoxProps) => {
   const [isInternal, setIsInternal] = useState(false);
   const [text, setText] = useState('');
   const [deliveryNote, setDeliveryNote] = useState<string | null>(null);
+  const [macros, setMacros] = useState<{ id: string; title: string; body: string }[]>([]);
+
+  useEffect(() => {
+    listMacros().then((result) => {
+      if (result.success && result.data) {
+        setMacros(result.data.map((macro) => ({ id: macro.id, title: macro.title, body: macro.body })));
+      }
+    });
+  }, []);
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
@@ -36,26 +46,22 @@ export const ReplyBox = ({ ticketId }: ReplyBoxProps) => {
     }
   };
 
-  const macros = [
-    { label: "PW Reset", text: "Vielen Dank für Ihre Geduld. Wir haben Ihr Passwort zurückgesetzt." },
-    { label: "Hardware", text: "Ihre Hardware wurde bestellt. Lieferzeit 3-5 Werktage." },
-    { label: "Check Status", text: "Gibt es neue Informationen zu Ihrem Anliegen?" }
-  ];
-
   return (
     <div className="p-6 bg-surface border-t border-outline-variant/15 shrink-0 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
-      {/* 1. Macro Quick Actions */}
-      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
-        {macros.map((macro, idx) => (
-          <button
-            key={idx}
-            onClick={() => setText(macro.text)}
-            className="whitespace-nowrap px-4 py-1.5 rounded-full border border-outline-variant/15 text-[10px] font-bold uppercase tracking-widest text-outline hover:bg-surface-container-high hover:border-primary-fixed/30 hover:text-primary transition-all bg-surface-container-lowest/50"
-          >
-            {macro.label}
-          </button>
-        ))}
-      </div>
+      {macros.length > 0 ? (
+        <div className="mb-5 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {macros.map((macro) => (
+            <button
+              key={macro.id}
+              type="button"
+              onClick={() => setText(macro.body)}
+              className="whitespace-nowrap rounded-full border border-outline-variant/15 bg-surface-container-lowest/50 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-outline transition-all hover:border-primary-fixed/30 hover:bg-surface-container-high hover:text-primary"
+            >
+              {macro.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* 2. Main Compose Area */}
       <div className={`bg-surface-container-highest/50 backdrop-blur-sm rounded-2xl p-2 transition-all duration-500 border-2 ${

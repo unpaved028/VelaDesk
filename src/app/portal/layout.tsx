@@ -21,7 +21,7 @@ export default async function PortalLayout({
           <div className="flex items-center gap-3">
             <VelaLogo variant="horizontal" />
             <span className="hidden text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 sm:inline">
-              Service Portal
+              Serviceportal
             </span>
           </div>
           <PortalNav isCustomerAdmin={session?.isCustomerAdmin === true} />

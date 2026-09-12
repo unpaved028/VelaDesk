@@ -3,6 +3,7 @@
 import { SLACountdown } from './SLACountdown';
 import { RelatedTicketsSection } from './RelatedTicketsSection';
 import { TimeTracker } from './TimeTracker';
+import { TicketAssetLinker } from './TicketAssetLinker';
 
 export interface ContextPanelRequester {
   name: string;
@@ -27,13 +28,6 @@ interface ContextPanelProps {
   firstResponseAt?: Date | string | null;
   resolvedAt?: Date | string | null;
   assets?: ContextPanelAsset[];
-}
-
-function warrantyState(expires: string | null): 'ok' | 'expired' | 'unknown' {
-  if (!expires) return 'unknown';
-  const date = new Date(expires);
-  if (Number.isNaN(date.getTime())) return 'unknown';
-  return date.getTime() < Date.now() ? 'expired' : 'ok';
 }
 
 export const ContextPanel = ({
@@ -120,44 +114,12 @@ export const ContextPanel = ({
 
       {ticketId ? <RelatedTicketsSection ticketId={ticketId} /> : null}
 
-      <div className="p-6">
-        <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest mb-6">Linked Assets</h3>
-
-        {assets.length === 0 ? (
-          <p className="text-xs text-on-surface-variant">No assets linked to this ticket.</p>
-        ) : (
-          <div className="space-y-3">
-            {assets.map((asset) => {
-              const warranty = warrantyState(asset.warrantyExpires);
-              return (
-                <div
-                  key={asset.id}
-                  className="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
-                      <span className="material-symbols-outlined text-outline">devices</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-on-surface truncate">{asset.name}</p>
-                      <p className="text-[10px] text-outline mt-0.5 tracking-tighter">
-                        {asset.type}
-                        {asset.serialNumber ? ` · SN: ${asset.serialNumber}` : ''}
-                      </p>
-                      {warranty === 'ok' ? (
-                        <p className="text-[10px] font-bold text-emerald-600 mt-1">Warranty active</p>
-                      ) : null}
-                      {warranty === 'expired' ? (
-                        <p className="text-[10px] font-bold text-red-600 mt-1">Warranty expired</p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {ticketId ? <TicketAssetLinker ticketId={ticketId} linkedAssets={assets} /> : (
+        <div className="p-6">
+          <h3 className="mb-6 text-[10px] font-bold uppercase tracking-widest text-outline">Linked Assets</h3>
+          <p className="text-xs text-on-surface-variant">No ticket selected.</p>
+        </div>
+      )}
     </aside>
   );
 };

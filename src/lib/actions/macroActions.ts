@@ -1,10 +1,10 @@
 'use server';
 
-import { PrismaClient, type Macro } from '@prisma/client';
-import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
+import type { Macro } from '@prisma/client';
+import { prisma } from '@/lib/db/prisma';
+import { getErrorMessage } from '@/lib/errors';
+import { requireAdminContext, requireAgentContext } from '@/lib/auth/session';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -12,11 +12,14 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
-export async function getMacros(tenantId: string): Promise<ApiResponse<Macro[]>> {
+export async function listMacros(): Promise<ApiResponse<Macro[]>> {
+  const auth = await requireAgentContext();
+  if (!auth.ok) return { success: false, data: null, error: auth.error };
+
   try {
     const macros = await prisma.macro.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' }
+      where: { tenantId: auth.ctx.tenantId },
+      orderBy: { title: 'asc' },
     });
     return { success: true, data: macros, error: null };
   } catch (error: unknown) {
@@ -24,39 +27,24 @@ export async function getMacros(tenantId: string): Promise<ApiResponse<Macro[]>>
   }
 }
 
-export async function createMacro(data: { tenantId: string; title: string; body: string }): Promise<ApiResponse<Macro>> {
+export async function createMacro(data: { title: string; body: string }): Promise<ApiResponse<Macro>> {
+  const admin = await requireAdminContext();
+  if (!admin.ok) return { success: false, data: null, error: admin.error };
+
+  const title = data.title.trim();
+  const body = data.body.trim();
+  if (!title || !body) {
+    return { success: false, data: null, error: 'Title and body are required.' };
+  }
+
   try {
     const macro = await prisma.macro.create({
       data: {
-        tenantId: data.tenantId,
-        title: data.title,
-        body: data.body,
-      }
-    });
-    revalidatePath('/admin/macros'); // or wherever the admin view might be
-    return { success: true, data: macro, error: null };
-  } catch (error: unknown) {
-    return { success: false, data: null, error: getErrorMessage(error) };
-  }
-}
-
-export async function updateMacro(id: string, tenantId: string, data: { title: string; body: string }): Promise<ApiResponse<{ count: number }>> {
-  try {
-    const macro = await prisma.macro.updateMany({
-      where: { 
-        id,
-        tenantId // Enforce tenancy
+        tenantId: admin.ctx.tenantId,
+        title,
+        body,
       },
-      data: {
-        title: data.title,
-        body: data.body,
-      }
     });
-
-    if (macro.count === 0) {
-      throw new Error("Macro not found or access denied.");
-    }
-
     revalidatePath('/admin/macros');
     return { success: true, data: macro, error: null };
   } catch (error: unknown) {
@@ -64,24 +52,36 @@ export async function updateMacro(id: string, tenantId: string, data: { title: s
   }
 }
 
-export async function deleteMacro(id: string, tenantId: string): Promise<ApiResponse<null>> {
+export async function updateMacro(id: string, data: { title: string; body: string }): Promise<ApiResponse<{ count: number }>> {
+  const admin = await requireAdminContext();
+  if (!admin.ok) return { success: false, data: null, error: admin.error };
+
   try {
-    // Check existence & tenancy first since deleteMany doesn't return the deleted object
-    const macro = await prisma.macro.findFirst({
-      where: {
-        id,
-        tenantId
-      }
+    const result = await prisma.macro.updateMany({
+      where: { id, tenantId: admin.ctx.tenantId },
+      data: { title: data.title.trim(), body: data.body.trim() },
     });
-
-    if (!macro) {
-      throw new Error("Macro not found or access denied.");
+    if (result.count === 0) {
+      return { success: false, data: null, error: 'Macro not found.' };
     }
+    revalidatePath('/admin/macros');
+    return { success: true, data: result, error: null };
+  } catch (error: unknown) {
+    return { success: false, data: null, error: getErrorMessage(error) };
+  }
+}
 
-    await prisma.macro.delete({
-      where: { id }
+export async function deleteMacro(id: string): Promise<ApiResponse<null>> {
+  const admin = await requireAdminContext();
+  if (!admin.ok) return { success: false, data: null, error: admin.error };
+
+  try {
+    const result = await prisma.macro.deleteMany({
+      where: { id, tenantId: admin.ctx.tenantId },
     });
-    
+    if (result.count === 0) {
+      return { success: false, data: null, error: 'Macro not found.' };
+    }
     revalidatePath('/admin/macros');
     return { success: true, data: null, error: null };
   } catch (error: unknown) {

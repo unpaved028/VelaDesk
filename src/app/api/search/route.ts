@@ -114,7 +114,7 @@ export async function GET(request: Request) {
         id: asset.id,
         title: asset.name,
         subtitle: `${asset.type} • ${asset.status}`,
-        url: `/admin/assets/${asset.id}`
+        url: `/admin/assets`
       });
     });
 

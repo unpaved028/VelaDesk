@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { decryptSecret } from './encryption';
 import { generateCsatToken } from './csatService';
+import { csatSubject } from './outboundCopy';
 
 /**
  * Sends a CSAT survey email to the ticket requester when a ticket is resolved.
@@ -79,7 +80,7 @@ export async function sendCsatEmail(
     // 6. Send email
     const mailPayload = {
       message: {
-        subject: `[#TK-${ticketId}] How was your experience?`,
+        subject: csatSubject(ticketId),
         body: { contentType: 'Html', content: htmlBody },
         toRecipients: [{ emailAddress: { address: toEmail } }],
       },
@@ -122,7 +123,7 @@ function buildCsatEmailHtml(ticketId: number, csatBaseUrl: string): string {
 
   return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; font-family:'Segoe UI', Arial, sans-serif; background:#f4f6f8;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
@@ -132,17 +133,17 @@ function buildCsatEmailHtml(ticketId: number, csatBaseUrl: string): string {
           VelaDesk
         </h1>
         <p style="color:#94a3b8; font-size:13px; margin:8px 0 0;">
-          Your feedback matters to us
+          Ihr Feedback hilft uns
         </p>
       </td>
     </tr>
     <tr>
       <td style="padding:32px 40px;">
         <p style="color:#334155; font-size:15px; line-height:1.6; margin:0 0 8px;">
-          Your request <strong>#TK-${ticketId}</strong> has been resolved.
+          Ihre Anfrage <strong>#TK-${ticketId}</strong> wurde geschlossen.
         </p>
         <p style="color:#64748b; font-size:14px; line-height:1.6; margin:0 0 28px;">
-          How would you rate your experience? Click one of the options below:
+          Wie war Ihre Erfahrung? Bitte eine der Optionen wählen:
         </p>
         
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -150,19 +151,19 @@ function buildCsatEmailHtml(ticketId: number, csatBaseUrl: string): string {
             <td align="center" width="33%">
               <a href="${goodUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
                 <div style="font-size:48px; line-height:1;">😊</div>
-                <div style="color:#16a34a; font-size:13px; font-weight:600; margin-top:8px;">Good</div>
+                <div style="color:#16a34a; font-size:13px; font-weight:600; margin-top:8px;">Gut</div>
               </a>
             </td>
             <td align="center" width="33%">
               <a href="${neutralUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
                 <div style="font-size:48px; line-height:1;">😐</div>
-                <div style="color:#ca8a04; font-size:13px; font-weight:600; margin-top:8px;">Neutral</div>
+                <div style="color:#ca8a04; font-size:13px; font-weight:600; margin-top:8px;">Geht so</div>
               </a>
             </td>
             <td align="center" width="33%">
               <a href="${badUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
                 <div style="font-size:48px; line-height:1;">😞</div>
-                <div style="color:#dc2626; font-size:13px; font-weight:600; margin-top:8px;">Bad</div>
+                <div style="color:#dc2626; font-size:13px; font-weight:600; margin-top:8px;">Schlecht</div>
               </a>
             </td>
           </tr>
@@ -172,7 +173,7 @@ function buildCsatEmailHtml(ticketId: number, csatBaseUrl: string): string {
     <tr>
       <td style="padding:20px 40px; background:#f8fafc; border-top:1px solid #e2e8f0;">
         <p style="color:#94a3b8; font-size:11px; margin:0; text-align:center;">
-          This survey link expires in 7 days. Your feedback helps us improve.
+          Dieser Link ist 7 Tage gültig.
         </p>
       </td>
     </tr>

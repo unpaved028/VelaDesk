@@ -217,6 +217,7 @@ model Customer {
   tenant   Tenant @relation(fields: [tenantId], references: [id])
   name     String
   email    String
+  company  String?
 
   @@index([tenantId])
 }

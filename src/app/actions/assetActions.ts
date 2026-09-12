@@ -124,3 +124,48 @@ export async function deleteAsset(id: unknown) {
     return createErrorResponse(message);
   }
 }
+
+export async function linkAssetToTicket(ticketId: number, assetId: string) {
+  const authResult = await requireAgentContext();
+  if (!authResult.ok) return createErrorResponse(authResult.error);
+  const tenantId = authResult.ctx.tenantId;
+
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+    select: { id: true },
+  });
+  const asset = await prisma.asset.findFirst({
+    where: { id: assetId, tenantId },
+    select: { id: true },
+  });
+  if (!ticket || !asset) return createErrorResponse('Ticket or asset not found.');
+
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { assets: { connect: { id: asset.id } } },
+  });
+  revalidatePath('/tickets');
+  revalidatePath(`/tickets/${ticketId}`);
+  revalidatePath('/admin/assets');
+  return { success: true, data: true, error: null };
+}
+
+export async function unlinkAssetFromTicket(ticketId: number, assetId: string) {
+  const authResult = await requireAgentContext();
+  if (!authResult.ok) return createErrorResponse(authResult.error);
+  const tenantId = authResult.ctx.tenantId;
+
+  const ticket = await prisma.ticket.findFirst({
+    where: { id: ticketId, tenantId },
+    select: { id: true },
+  });
+  if (!ticket) return createErrorResponse('Ticket not found.');
+
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { assets: { disconnect: { id: assetId } } },
+  });
+  revalidatePath('/tickets');
+  revalidatePath(`/tickets/${ticketId}`);
+  return { success: true, data: true, error: null };
+}

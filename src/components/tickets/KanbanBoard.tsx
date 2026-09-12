@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { AlertCircle, ShoppingCart, Clock, CheckCircle2, MoreHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, ShoppingCart, Clock, CheckCircle2 } from 'lucide-react';
 
 interface KanbanCardProps {
   id: string;
@@ -15,10 +16,13 @@ const KanbanCard = ({ id, subject, requester, priority, itilType }: KanbanCardPr
   const isUrgent = priority === 'URGENT' || priority === 'HIGH';
 
   return (
-    <div className="bg-white dark:bg-white/5 p-4 rounded-xl shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all cursor-grab active:cursor-grabbing group mb-3">
+    <Link
+      href={`/tickets/${id}`}
+      className="mb-3 block rounded-xl border border-transparent bg-white p-4 shadow-sm transition-all hover:border-slate-200 dark:bg-white/5 dark:hover:border-white/10"
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold text-on-surface-variant opacity-60">#TK-{id}</span>
+          <span className="text-[9px] font-bold text-on-surface-variant opacity-60">INC-{id.padStart(4, '0')}</span>
           {itilType === 'INCIDENT' ? (
             <AlertCircle className="w-3 h-3 text-error dark:text-red-400" />
           ) : (
@@ -35,14 +39,11 @@ const KanbanCard = ({ id, subject, requester, priority, itilType }: KanbanCardPr
       </h4>
       
       <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-50 dark:border-white/5">
-        <span className="text-[10px] text-on-surface-variant opacity-70 font-medium truncate max-w-[100px]">
+        <span className="max-w-[140px] truncate text-[10px] font-medium text-on-surface-variant opacity-70">
           {requester}
         </span>
-        <button className="text-on-surface-variant opacity-40 hover:opacity-100 transition-opacity">
-          <MoreHorizontal className="w-3.5 h-3.5" />
-        </button>
       </div>
-    </div>
+    </Link>
   );
 };
 
@@ -70,17 +71,14 @@ const KanbanColumn = ({ title, count, icon, children, colorClass }: ColumnProps)
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto px-2 custom-scrollbar pb-10">
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-2 pb-10">
         {children}
-        <button className="w-full py-3 rounded-xl border border-dashed border-slate-200 dark:border-white/5 text-[10px] font-bold text-on-surface-variant/40 hover:text-on-surface-variant/100 hover:border-slate-300 dark:hover:border-white/20 transition-all uppercase tracking-tighter">
-          + Add Ticket
-        </button>
       </div>
     </div>
   );
 };
 
-interface KanbanTicket {
+export interface KanbanTicket {
   id: string;
   subject: string;
   requester: string;
@@ -89,17 +87,8 @@ interface KanbanTicket {
   status: 'NEW' | 'OPEN' | 'PENDING' | 'RESOLVED';
 }
 
-export const KanbanBoard = () => {
-  const mockTickets: KanbanTicket[] = [
-    { id: '8821', subject: 'Laptop Display flackert', requester: 'Max Mustermann', priority: 'URGENT', itilType: 'INCIDENT', status: 'NEW' },
-    { id: '8822', subject: 'VPN Login funktioniert nicht', requester: 'Julia Jäger', priority: 'HIGH', itilType: 'INCIDENT', status: 'OPEN' },
-    { id: '8823', subject: 'Neues MacBook M3 anfordern', requester: 'Rene Jung', priority: 'MEDIUM', itilType: 'SERVICE_REQUEST', status: 'PENDING' },
-    { id: '8824', subject: 'Adobe CC Lizenz verlängern', requester: 'Sarah Schmidt', priority: 'LOW', itilType: 'SERVICE_REQUEST', status: 'NEW' },
-    { id: '8825', subject: 'Remote Office Setup', requester: 'Tom Teufel', priority: 'MEDIUM', itilType: 'SERVICE_REQUEST', status: 'RESOLVED' },
-    { id: '8826', subject: 'Drucker im 3. OG staut', requester: 'Ute Uhu', priority: 'HIGH', itilType: 'INCIDENT', status: 'OPEN' },
-  ];
-
-  const getTicketsByStatus = (status: string) => mockTickets.filter(t => t.status === status);
+export const KanbanBoard = ({ tickets }: { tickets: KanbanTicket[] }) => {
+  const getTicketsByStatus = (status: KanbanTicket['status']) => tickets.filter((ticket) => ticket.status === status);
 
   return (
     <div className="flex h-full p-4 gap-4 items-start bg-slate-50/50 dark:bg-transparent">

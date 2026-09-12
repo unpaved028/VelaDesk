@@ -1,5 +1,12 @@
 import { prisma } from '@/lib/db/prisma';
 import { findActiveMailbox, sendGraphMail, type MailDelivery } from './graphMail';
+import {
+  magicLinkHtml,
+  magicLinkSubject,
+  publicReplySubject,
+  ticketAckHtml,
+  ticketAckSubject,
+} from './outboundCopy';
 
 export type { MailDelivery };
 
@@ -42,7 +49,7 @@ export async function sendTicketReplyNotification(
     tenantId,
     mailbox,
     toEmail,
-    subject: `[#TK-${ticketId}] New update on your request`,
+    subject: publicReplySubject(ticketId),
     htmlBody,
   });
 
@@ -63,16 +70,50 @@ export async function sendMagicLinkMail(
     return 'no_mailbox';
   }
 
-  const htmlBody = `
-    <p>Sign in to VelaDesk with this single-use link (expires in 15 minutes):</p>
-    <p><a href="${magicLinkUrl}">${magicLinkUrl}</a></p>
-  `;
-
   return sendGraphMail({
     tenantId,
     mailbox,
     toEmail,
-    subject: 'Your VelaDesk sign-in link',
-    htmlBody,
+    subject: magicLinkSubject(),
+    htmlBody: magicLinkHtml(magicLinkUrl),
+  });
+}
+
+export async function sendTicketAckMail(input: {
+  ticketId: number;
+  tenantId: string;
+  workspaceId: string;
+  requesterId: string;
+  subject: string;
+}): Promise<MailDelivery> {
+  let toEmail = '';
+  const user = await prisma.user.findUnique({ where: { id: input.requesterId } });
+  if (user?.email) {
+    toEmail = user.email;
+  } else {
+    const customer = await prisma.customer.findFirst({
+      where: {
+        tenantId: input.tenantId,
+        OR: [{ id: input.requesterId }, { email: input.requesterId.toLowerCase() }],
+      },
+    });
+    if (customer?.email) {
+      toEmail = customer.email;
+    } else if (input.requesterId.includes('@')) {
+      toEmail = input.requesterId;
+    }
+  }
+
+  if (!toEmail) return 'no_recipient';
+
+  const mailbox = await findActiveMailbox(input.tenantId, input.workspaceId);
+  if (!mailbox) return 'no_mailbox';
+
+  return sendGraphMail({
+    tenantId: input.tenantId,
+    mailbox,
+    toEmail,
+    subject: ticketAckSubject(input.ticketId),
+    htmlBody: ticketAckHtml(input.ticketId, input.subject),
   });
 }

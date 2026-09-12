@@ -73,8 +73,11 @@ export default async function TicketsLayout({
           select: { name: true, email: true },
         }),
         prisma.customer.findFirst({
-          where: { id: ticket.requesterId, tenantId: authResult.ctx.tenantId },
-          select: { name: true, email: true },
+          where: {
+            tenantId: authResult.ctx.tenantId,
+            OR: [{ id: ticket.requesterId }, { email: ticket.requesterId.toLowerCase() }],
+          },
+          select: { name: true, email: true, company: true },
         }),
       ]);
 
@@ -83,7 +86,13 @@ export default async function TicketsLayout({
         requester = {
           name: person.name,
           email: person.email,
-          company: ticket.workspace.tenant.name,
+          company: customer?.company ?? ticket.workspace.tenant.name,
+        };
+      } else if (ticket.requesterId.includes('@')) {
+        requester = {
+          name: ticket.requesterId,
+          email: ticket.requesterId,
+          company: customer?.company ?? null,
         };
       }
     }

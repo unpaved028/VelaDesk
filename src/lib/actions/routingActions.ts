@@ -1,10 +1,9 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db/prisma';
+import { requireAdminContext } from '@/lib/auth/session';
 import { matchEmailPattern } from '@/lib/routing/emailPattern';
-
-const prisma = new PrismaClient();
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -12,17 +11,26 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
-// --- READ ---
-export async function getRoutingRules(tenantId: string) {
+async function adminTenantId(): Promise<{ ok: true; tenantId: string } | { ok: false; error: string }> {
+  const admin = await requireAdminContext();
+  if (!admin.ok) return { ok: false, error: admin.error };
+  // tenantId from the session only — never from the client payload.
+  return { ok: true, tenantId: admin.ctx.tenantId };
+}
+
+export async function getRoutingRules() {
+  const auth = await adminTenantId();
+  if (!auth.ok) return { success: false, data: null, error: auth.error };
+
   try {
     const rules = await prisma.routingRule.findMany({
-      where: { tenantId }, // SOP-02: Tenant isolation
+      where: { tenantId: auth.tenantId },
       include: {
         workspace: {
           select: { id: true, name: true },
         },
       },
-      orderBy: { priority: 'asc' }, // Lower number = higher priority
+      orderBy: { priority: 'asc' },
     });
 
     return { success: true, data: rules, error: null };
@@ -32,18 +40,20 @@ export async function getRoutingRules(tenantId: string) {
   }
 }
 
-// --- CREATE ---
 export async function createRoutingRule(data: {
-  tenantId: string;
+  tenantId?: string;
   workspaceId: string;
   emailPattern: string;
   priority?: number;
   description?: string;
 }) {
+  const auth = await adminTenantId();
+  if (!auth.ok) return { success: false, data: null, error: auth.error };
+  const tenantId = auth.tenantId;
+
   try {
-    // Validate workspace belongs to the same tenant (defense-in-depth)
     const workspace = await prisma.workspace.findFirst({
-      where: { id: data.workspaceId, tenantId: data.tenantId },
+      where: { id: data.workspaceId, tenantId },
     });
     if (!workspace) {
       return { success: false, data: null, error: 'Workspace not found or tenant mismatch.' };
@@ -51,7 +61,7 @@ export async function createRoutingRule(data: {
 
     const rule = await prisma.routingRule.create({
       data: {
-        tenantId: data.tenantId,
+        tenantId,
         workspaceId: data.workspaceId,
         emailPattern: data.emailPattern,
         priority: data.priority ?? 100,
@@ -67,36 +77,37 @@ export async function createRoutingRule(data: {
   }
 }
 
-// --- UPDATE ---
 export async function updateRoutingRule(data: {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   workspaceId?: string;
   emailPattern?: string;
   priority?: number;
   isActive?: boolean;
   description?: string | null;
 }) {
+  const auth = await adminTenantId();
+  if (!auth.ok) return { success: false, data: null, error: auth.error };
+  const tenantId = auth.tenantId;
+
   try {
-    // SOP-02: Verify rule belongs to tenant before update
     const existing = await prisma.routingRule.findFirst({
-      where: { id: data.id, tenantId: data.tenantId },
+      where: { id: data.id, tenantId },
     });
     if (!existing) {
       return { success: false, data: null, error: 'Routing rule not found or tenant mismatch.' };
     }
 
-    // If workspace is being changed, validate it belongs to same tenant
     if (data.workspaceId && data.workspaceId !== existing.workspaceId) {
       const workspace = await prisma.workspace.findFirst({
-        where: { id: data.workspaceId, tenantId: data.tenantId },
+        where: { id: data.workspaceId, tenantId },
       });
       if (!workspace) {
         return { success: false, data: null, error: 'Target workspace not found or tenant mismatch.' };
       }
     }
 
-    const { id, tenantId, ...updateData } = data;
+    const { id, tenantId: _ignored, ...updateData } = data;
     const rule = await prisma.routingRule.update({
       where: { id },
       data: updateData,
@@ -110,10 +121,12 @@ export async function updateRoutingRule(data: {
   }
 }
 
-// --- DELETE ---
-export async function deleteRoutingRule(id: string, tenantId: string) {
+export async function deleteRoutingRule(id: string, _tenantId?: string) {
+  const auth = await adminTenantId();
+  if (!auth.ok) return { success: false, data: null, error: auth.error };
+  const tenantId = auth.tenantId;
+
   try {
-    // SOP-02: Verify rule belongs to tenant before deletion
     const existing = await prisma.routingRule.findFirst({
       where: { id, tenantId },
     });
@@ -131,14 +144,10 @@ export async function deleteRoutingRule(id: string, tenantId: string) {
   }
 }
 
-// --- ROUTING ENGINE (Core Logic) ---
-// Evaluates routing rules for an incoming email sender address.
-// Returns the workspaceId if a match is found, otherwise null.
 export async function resolveWorkspaceForEmail(
   tenantId: string,
   senderEmail: string
 ): Promise<string | null> {
-  // Fetch active rules for this tenant, ordered by priority (ascending)
   const rules = await prisma.routingRule.findMany({
     where: {
       tenantId,
@@ -154,7 +163,6 @@ export async function resolveWorkspaceForEmail(
     }
   }
 
-  // No rule matched — check global catch-all
   const config = await prisma.systemConfig.findUnique({
     where: { id: 'global' },
     select: { defaultWorkspaceId: true },

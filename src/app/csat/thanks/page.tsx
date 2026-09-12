@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { VelaLogo } from '@/components/ui/VelaLogo';
 
 export const metadata: Metadata = {
-  title: 'Thank You — VelaDesk',
-  description: 'Thank you for your feedback.',
+  title: 'Danke — VelaDesk',
+  description: 'Danke für Ihr Feedback.',
 };
 
 const EMOJI_MAP: Record<string, string> = {
@@ -13,16 +13,16 @@ const EMOJI_MAP: Record<string, string> = {
 };
 
 const LABEL_MAP: Record<string, string> = {
-  GOOD: 'Glad to hear it!',
-  NEUTRAL: "We'll try to do better.",
-  BAD: "We're sorry. We'll work on improving.",
+  GOOD: 'Freut uns.',
+  NEUTRAL: 'Wir versuchen, besser zu werden.',
+  BAD: 'Das tut uns leid. Wir arbeiten daran.',
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  already_submitted: 'You have already submitted feedback for this ticket.',
-  expired: 'This survey link has expired.',
-  invalid: 'This survey link is invalid.',
-  invalid_score: 'Invalid rating. Please use the links from your email.',
+  already_submitted: 'Für dieses Ticket wurde bereits Feedback abgegeben.',
+  expired: 'Dieser Umfrage-Link ist abgelaufen.',
+  invalid: 'Dieser Umfrage-Link ist ungültig.',
+  invalid_score: 'Ungültige Bewertung. Bitte die Links aus der E-Mail verwenden.',
 };
 
 /**
@@ -51,7 +51,7 @@ export default async function CsatThanksPage({
           </div>
           <div>
             <h1 className="font-headline text-lg font-bold text-white">VelaDesk</h1>
-            <p className="mt-0.5 text-xs text-white/50">Customer Feedback</p>
+            <p className="mt-0.5 text-xs text-white/50">Kundenfeedback</p>
           </div>
         </div>
 
@@ -60,23 +60,23 @@ export default async function CsatThanksPage({
             <>
               <div className="mb-4 text-6xl">{EMOJI_MAP[score] || '✅'}</div>
               <h2 className="mb-2 font-headline text-xl font-bold text-on-surface">
-                Thank You!
+                Danke!
               </h2>
               <p className="text-sm leading-relaxed text-on-surface-variant">
-                {LABEL_MAP[score] || 'Your feedback has been recorded.'}
+                {LABEL_MAP[score] || 'Ihr Feedback wurde gespeichert.'}
               </p>
               <p className="mt-6 text-xs text-on-surface-variant/70">
-                Your response helps us continuously improve our service.
+                Ihre Antwort hilft uns, den Service zu verbessern.
               </p>
             </>
           ) : (
             <>
               <div className="mb-4 text-5xl">⚠️</div>
               <h2 className="mb-2 font-headline text-xl font-bold text-on-surface">
-                Oops
+                Hinweis
               </h2>
               <p className="text-sm leading-relaxed text-on-surface-variant">
-                {ERROR_MESSAGES[reason] || 'Something went wrong.'}
+                {ERROR_MESSAGES[reason] || 'Etwas ist schiefgelaufen.'}
               </p>
             </>
           )}

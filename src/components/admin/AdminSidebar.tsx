@@ -14,7 +14,11 @@ export const AdminSidebar = () => {
     { label: 'Workspaces', href: '/admin/workspaces', icon: 'work' },
     { label: 'Agents', href: '/admin/agents', icon: 'group' },
     { label: 'Taxonomy', href: '/admin/taxonomy', icon: 'sell' },
+    { label: 'Customers', href: '/admin/customers', icon: 'apartment' },
+    { label: 'Macros', href: '/admin/macros', icon: 'quick_phrases' },
     { label: 'Mailboxes', href: '/admin/mailboxes', icon: 'inbox' },
+    { label: 'Routing', href: '/admin/routing', icon: 'alt_route' },
+    { label: 'Assets', href: '/admin/assets', icon: 'devices' },
     { label: 'Billing', href: '/admin/billing', icon: 'receipt_long' },
   ];
 
