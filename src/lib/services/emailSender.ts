@@ -1,12 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { findActiveMailbox, sendGraphMail, type MailDelivery } from './graphMail';
-import {
-  magicLinkHtml,
-  magicLinkSubject,
-  publicReplySubject,
-  ticketAckHtml,
-  ticketAckSubject,
-} from './outboundCopy';
+import { getTenantFacing } from './tenantFacing';
+import { renderMail } from './mailTemplates';
 
 export type { MailDelivery };
 
@@ -45,11 +40,16 @@ export async function sendTicketReplyNotification(
     return 'no_mailbox';
   }
 
+  const facing = await getTenantFacing(tenantId);
+  const rendered = await renderMail(tenantId, 'public_reply', facing, {
+    brand: facing.brandName,
+    ticketId,
+  });
   const delivery = await sendGraphMail({
     tenantId,
     mailbox,
     toEmail,
-    subject: publicReplySubject(ticketId),
+    subject: rendered.subject,
     htmlBody,
   });
 
@@ -70,12 +70,17 @@ export async function sendMagicLinkMail(
     return 'no_mailbox';
   }
 
+  const facing = await getTenantFacing(tenantId);
+  const rendered = await renderMail(tenantId, 'magic_link', facing, {
+    brand: facing.brandName,
+    link: magicLinkUrl,
+  });
   return sendGraphMail({
     tenantId,
     mailbox,
     toEmail,
-    subject: magicLinkSubject(),
-    htmlBody: magicLinkHtml(magicLinkUrl),
+    subject: rendered.subject,
+    htmlBody: rendered.body,
   });
 }
 
@@ -109,11 +114,17 @@ export async function sendTicketAckMail(input: {
   const mailbox = await findActiveMailbox(input.tenantId, input.workspaceId);
   if (!mailbox) return 'no_mailbox';
 
+  const facing = await getTenantFacing(input.tenantId);
+  const rendered = await renderMail(input.tenantId, 'ack', facing, {
+    brand: facing.brandName,
+    ticketId: input.ticketId,
+    subject: input.subject,
+  });
   return sendGraphMail({
     tenantId: input.tenantId,
     mailbox,
     toEmail,
-    subject: ticketAckSubject(input.ticketId),
-    htmlBody: ticketAckHtml(input.ticketId, input.subject),
+    subject: rendered.subject,
+    htmlBody: rendered.body,
   });
 }

@@ -4,6 +4,7 @@ import {
   MSP_SAMPLE_TICKETS,
   MSP_SLAS,
   MSP_WORKSPACE_NAME,
+  starterCatalogForLocale,
 } from './mspSeedCatalog';
 
 export interface MspSeedResult {
@@ -12,6 +13,7 @@ export interface MspSeedResult {
   createdCategories: number;
   createdSlas: number;
   createdSampleTickets: number;
+  createdCatalogItems: number;
 }
 
 /**
@@ -22,6 +24,7 @@ export async function seedBestPracticesForTenant(tenantId: string): Promise<MspS
   let createdCategories = 0;
   let createdSlas = 0;
   let createdSampleTickets = 0;
+  let createdCatalogItems = 0;
 
   let workspace = await prisma.workspace.findFirst({
     where: { tenantId, name: MSP_WORKSPACE_NAME },
@@ -110,8 +113,33 @@ export async function seedBestPracticesForTenant(tenantId: string): Promise<MspS
     createdSampleTickets += 1;
   }
 
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId },
+    select: { locale: true },
+  });
+  for (const [index, item] of starterCatalogForLocale(tenant?.locale || 'de').entries()) {
+    const existing = await prisma.catalogItem.findFirst({
+      where: { tenantId, title: item.title },
+      select: { id: true },
+    });
+    if (existing) continue;
+    await prisma.catalogItem.create({
+      data: {
+        tenantId,
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        sortOrder: index,
+      },
+    });
+    createdCatalogItems += 1;
+  }
+
   const alreadySeeded =
-    createdCategories === 0 && createdSlas === 0 && createdSampleTickets === 0;
+    createdCategories === 0 &&
+    createdSlas === 0 &&
+    createdSampleTickets === 0 &&
+    createdCatalogItems === 0;
 
   return {
     workspaceId: workspace.id,
@@ -119,5 +147,6 @@ export async function seedBestPracticesForTenant(tenantId: string): Promise<MspS
     createdCategories,
     createdSlas,
     createdSampleTickets,
+    createdCatalogItems,
   };
 }

@@ -10,6 +10,7 @@ describe('extractTicketIdFromSubject', () => {
     expect(extractTicketIdFromSubject('[#TK-1] New update on your request')).toBe(1);
     expect(extractTicketIdFromSubject('[#TK-1] Neue Nachricht zu Ihrer Anfrage')).toBe(1);
     expect(extractTicketIdFromSubject('[#TK-4] Ihre Anfrage ist eingegangen')).toBe(4);
+    expect(extractTicketIdFromSubject('[#TK-4] We received your request')).toBe(4);
   });
 
   it('reads Outlook Re: / Fwd: wrappers', () => {

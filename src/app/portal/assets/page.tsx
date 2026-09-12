@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
 import { getPortalSession } from '@/lib/services/getPortalSession';
 import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
+import { getTenantFacing } from '@/lib/services/tenantFacing';
+import { portalCopy } from '@/lib/i18n/customerFacing';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +11,7 @@ export default async function PortalAssetsPage() {
   const { authenticated, session } = await getPortalSession();
   if (!authenticated || !session) redirect('/login');
   if (!session.isCustomerAdmin) redirect('/portal');
+  const copy = portalCopy((await getTenantFacing(session.tenantId)).locale);
 
   const assets = await prisma.asset.findMany({
     where: { tenantId: session.tenantId },
@@ -19,11 +22,11 @@ export default async function PortalAssetsPage() {
   return (
     <div className="space-y-8">
       <PortalPageHeader
-        title="Asset Übersicht"
-        description="Geräte Ihres Mandanten."
+        title={copy.assetsTitle}
+        description={copy.assetsDescription}
       />
       {assets.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">Keine Assets vorhanden.</p>
+        <p className="text-sm text-on-surface-variant">{copy.noAssets}</p>
       ) : (
         <div className="space-y-3">
           {assets.map((asset) => (

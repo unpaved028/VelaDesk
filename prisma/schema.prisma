@@ -21,9 +21,17 @@ model Tenant {
   businessDays      String @default("1,2,3,4,5") // 1=Monday, 7=Sunday
   timezone          String @default("Europe/Berlin")
 
-  workspaces Workspace[]
-  users      User[]
-  customers  Customer[]
+  // Customer-facing identity. One install serves many MSPs — never hardcode brand or language.
+  brandName String?
+  locale    String  @default("de")
+  logoMime  String?
+  logoData  Bytes?
+
+  workspaces     Workspace[]
+  users          User[]
+  customers      Customer[]
+  catalogItems   CatalogItem[]
+  emailTemplates EmailTemplate[]
 
   // Encrypted inbound RMM token (encryptSecret(value, tenantId) — SOP-05)
   inboundWebhookSecret String?
@@ -219,6 +227,35 @@ model Customer {
   email    String
   company  String?
 
+  @@index([tenantId])
+}
+
+// Portal service catalog — tenant-owned, not a hardcoded product list.
+model CatalogItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, sortOrder])
+}
+
+// Outbound mail copy — tenant-owned. Empty row means locale defaults.
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
   @@index([tenantId])
 }
 

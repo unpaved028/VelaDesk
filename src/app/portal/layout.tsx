@@ -1,9 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { VelaLogo } from '@/components/ui/VelaLogo';
+import { TenantBrandMark } from '@/components/ui/TenantBrandMark';
 import { LetterAvatar } from '@/components/ui/LetterAvatar';
 import { getPortalSession } from '@/lib/services/getPortalSession';
+import { getTenantFacing } from '@/lib/services/tenantFacing';
+import { portalCopy } from '@/lib/i18n/customerFacing';
 import { PortalNav } from '@/components/portal/PortalNav';
 
 export default async function PortalLayout({
@@ -12,19 +14,22 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const { session } = await getPortalSession();
-  const displayName = session?.name || session?.email || 'Customer';
+  const facing = session ? await getTenantFacing(session.tenantId) : null;
+  const copy = portalCopy(facing?.locale ?? 'de');
+  const displayName = session?.name || session?.email || facing?.brandName || 'Customer';
   const roleLabel = session?.isCustomerAdmin ? 'Customer Admin' : 'Customer';
   return (
     <div className="flex min-h-screen flex-col bg-surface text-on-surface antialiased transition-colors">
+      {facing?.hasLogo ? <link rel="icon" href="/api/branding/logo" /> : null}
       <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-outline-variant/15 bg-surface-container-lowest/80 px-6 backdrop-blur-xl md:px-12">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <VelaLogo variant="horizontal" />
+            <TenantBrandMark hasLogo={facing?.hasLogo === true} variant="horizontal" />
             <span className="hidden text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 sm:inline">
-              Serviceportal
+              {facing?.brandName || copy.servicePortal}
             </span>
           </div>
-          <PortalNav isCustomerAdmin={session?.isCustomerAdmin === true} />
+          <PortalNav isCustomerAdmin={session?.isCustomerAdmin === true} copy={copy} />
         </div>
 
         <div className="flex items-center gap-6">
@@ -49,10 +54,10 @@ export default async function PortalLayout({
       <footer className="border-t border-outline-variant/15 px-6 py-12">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 md:flex-row">
           <div className="opacity-60">
-            <VelaLogo variant="horizontal" size="small" />
+            <TenantBrandMark hasLogo={facing?.hasLogo === true} variant="horizontal" />
           </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">
-            © 2026 VelaDesk
+            © 2026 {facing?.brandName || 'VelaDesk'}
           </p>
         </div>
       </footer>

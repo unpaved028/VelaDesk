@@ -24,6 +24,15 @@ Use it when a small IT team or MSP wants tickets, a Magic Link portal, and optio
 | First login | Magic Link; Microsoft Entra optional | Local users or SSO first |
 | Mail | Microsoft Graph when a mailbox exists | IMAP/SMTP or a separate mail stack |
 
+## Für Systemhäuser (DACH)
+
+VelaDesk ist für kleine IT und MSPs, die Tickets selbst hosten wollen — nicht für US-SaaS-Vergleiche.
+
+- Läuft auf einem Raspberry Pi oder einem kleinen Windows-Server, unter 1 GB RAM.
+- Kundenportal und Ausgangsmails tragen den Namen, die Sprache und das Logo des Mandanten.
+- Microsoft 365 nur, wenn ein Postfach angeschlossen ist. Ohne Postfach kein vorgetäuschter Versand.
+- First-Run per Magic Link. Entra SSO ist optional, nicht die Voraussetzung.
+
 ## Demo
 
 [90-second walkthrough](public/demo/veladesk-90s.mp4): install on a Pi, open the public home page, sign in with a Magic Link, then open the seeded ticket queue.

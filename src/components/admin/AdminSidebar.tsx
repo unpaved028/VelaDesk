@@ -14,6 +14,7 @@ export const AdminSidebar = () => {
     { label: 'Workspaces', href: '/admin/workspaces', icon: 'work' },
     { label: 'Agents', href: '/admin/agents', icon: 'group' },
     { label: 'Taxonomy', href: '/admin/taxonomy', icon: 'sell' },
+    { label: 'Appearance', href: '/admin/appearance', icon: 'palette' },
     { label: 'Customers', href: '/admin/customers', icon: 'apartment' },
     { label: 'Macros', href: '/admin/macros', icon: 'quick_phrases' },
     { label: 'Mailboxes', href: '/admin/mailboxes', icon: 'inbox' },

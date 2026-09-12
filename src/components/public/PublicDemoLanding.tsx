@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { VelaLogo } from '@/components/ui/VelaLogo';
 
 /**
- * Unauthenticated home for a public demo. Staff still use Magic Link;
- * Entra is optional and must not block first contact.
+ * Public first contact for DACH system houses and small IT teams.
+ * Product name stays VelaDesk; tenant branding lives behind login.
  */
 export const PublicDemoLanding = () => {
   return (
@@ -16,20 +16,21 @@ export const PublicDemoLanding = () => {
           <div className="flex flex-col items-center gap-2">
             <h1 className="font-headline text-4xl font-bold tracking-tight">VelaDesk</h1>
             <p className="text-xs font-bold uppercase tracking-widest leading-loose text-white/40">
-              Self-hosted ITSM
+              Self-hosted ITSM für Systemhäuser
             </p>
           </div>
         </div>
 
         <div className="w-full flex flex-col gap-6 text-center">
           <p className="text-sm font-medium text-white/55 leading-relaxed">
-            A helpdesk for small IT teams and MSPs. Runs on a Raspberry Pi.
-            Sign in with a Magic Link — Microsoft Entra is optional.
+            Tickets, Kundenportal und optional Microsoft 365 — auf einem Raspberry Pi
+            oder einem kleinen Windows-Server. Kein US-SaaS, kein Mietmodell.
+            Jeder Mandant setzt Name, Sprache, Katalog und Logo selbst.
           </p>
           <ul className="text-left text-sm text-white/40 font-medium flex flex-col gap-3 px-2">
-            <li>Ticket queue with three sample requests after MSP seed</li>
-            <li>Staff and portal login without Entra SSO</li>
-            <li>Shared mailbox later, if you want outbound mail</li>
+            <li>Anmeldung per Magic Link. Microsoft Entra ist optional.</li>
+            <li>Nach dem MSP-Seed drei Beispieltickets in der Queue.</li>
+            <li>Postfach später, wenn Ausgangsmail gebraucht wird.</li>
           </ul>
         </div>
 
@@ -37,7 +38,7 @@ export const PublicDemoLanding = () => {
           href="/login"
           className="flex h-16 w-full items-center justify-center rounded-2xl bg-white text-xs font-bold uppercase tracking-widest text-[#000e23] shadow-xl transition-all hover:scale-[1.02] hover:bg-white/90 active:scale-95"
         >
-          Sign in with Magic Link
+          Mit Magic Link anmelden
         </Link>
 
         <p className="text-[10px] uppercase font-bold tracking-widest text-white/20">© 2026 VelaDesk</p>

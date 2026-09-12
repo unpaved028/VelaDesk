@@ -5,6 +5,7 @@ import {
   MSP_SAMPLE_TICKET_SUBJECT,
   MSP_SLAS,
   MSP_WORKSPACE_NAME,
+  starterCatalogForLocale,
 } from './mspSeedCatalog';
 
 describe('MSP seed catalog', () => {
@@ -34,5 +35,11 @@ describe('MSP seed catalog', () => {
       'New starter needs laptop and mailbox',
     ]);
     expect(MSP_SAMPLE_TICKET_SUBJECT).toBe('Welcome to VelaDesk');
+  });
+
+  it('offers a starter catalog per customer language', () => {
+    expect(starterCatalogForLocale('de')).toHaveLength(6);
+    expect(starterCatalogForLocale('en')[0].title).toBe('New laptop');
+    expect(starterCatalogForLocale('de')[0].title).toBe('Neues Notebook');
   });
 });

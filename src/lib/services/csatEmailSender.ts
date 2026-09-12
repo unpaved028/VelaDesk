@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db/prisma';
 import { decryptSecret } from './encryption';
 import { generateCsatToken } from './csatService';
-import { csatSubject } from './outboundCopy';
+import { getTenantFacing } from './tenantFacing';
+import { renderMail } from './mailTemplates';
 
 /**
  * Sends a CSAT survey email to the ticket requester when a ticket is resolved.
@@ -36,8 +37,13 @@ export async function sendCsatEmail(
     // 2. Generate single-use CSAT token
     const { csatUrl } = await generateCsatToken(ticketId, tenantId);
 
-    // 3. Build the smiley-link email HTML
-    const htmlBody = buildCsatEmailHtml(ticketId, csatUrl);
+    const facing = await getTenantFacing(tenantId);
+    const rendered = await renderMail(tenantId, 'csat', facing, {
+      brand: facing.brandName,
+      ticketId,
+      link: csatUrl,
+    });
+    const htmlBody = rendered.body;
 
     // 4. Get MailboxConfig for this workspace
     const config = await prisma.mailboxConfig.findUnique({
@@ -80,7 +86,7 @@ export async function sendCsatEmail(
     // 6. Send email
     const mailPayload = {
       message: {
-        subject: csatSubject(ticketId),
+        subject: rendered.subject,
         body: { contentType: 'Html', content: htmlBody },
         toRecipients: [{ emailAddress: { address: toEmail } }],
       },
@@ -110,74 +116,4 @@ export async function sendCsatEmail(
     console.error('[csatEmail] Critical error sending CSAT email:', error);
     return false;
   }
-}
-
-/**
- * Builds a clean, branded HTML email with 3 satisfaction smiley buttons.
- * Each button links to the CSAT API with the appropriate score query parameter.
- */
-function buildCsatEmailHtml(ticketId: number, csatBaseUrl: string): string {
-  const goodUrl = `${csatBaseUrl}?score=GOOD`;
-  const neutralUrl = `${csatBaseUrl}?score=NEUTRAL`;
-  const badUrl = `${csatBaseUrl}?score=BAD`;
-
-  return `
-<!DOCTYPE html>
-<html lang="de">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0; padding:0; font-family:'Segoe UI', Arial, sans-serif; background:#f4f6f8;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-    <tr>
-      <td style="background:linear-gradient(135deg, #0f172a, #1e3a5f); padding:32px 40px;">
-        <h1 style="color:#ffffff; font-size:20px; margin:0; font-weight:600;">
-          VelaDesk
-        </h1>
-        <p style="color:#94a3b8; font-size:13px; margin:8px 0 0;">
-          Ihr Feedback hilft uns
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:32px 40px;">
-        <p style="color:#334155; font-size:15px; line-height:1.6; margin:0 0 8px;">
-          Ihre Anfrage <strong>#TK-${ticketId}</strong> wurde geschlossen.
-        </p>
-        <p style="color:#64748b; font-size:14px; line-height:1.6; margin:0 0 28px;">
-          Wie war Ihre Erfahrung? Bitte eine der Optionen wählen:
-        </p>
-        
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td align="center" width="33%">
-              <a href="${goodUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
-                <div style="font-size:48px; line-height:1;">😊</div>
-                <div style="color:#16a34a; font-size:13px; font-weight:600; margin-top:8px;">Gut</div>
-              </a>
-            </td>
-            <td align="center" width="33%">
-              <a href="${neutralUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
-                <div style="font-size:48px; line-height:1;">😐</div>
-                <div style="color:#ca8a04; font-size:13px; font-weight:600; margin-top:8px;">Geht so</div>
-              </a>
-            </td>
-            <td align="center" width="33%">
-              <a href="${badUrl}" style="text-decoration:none; display:inline-block; text-align:center;">
-                <div style="font-size:48px; line-height:1;">😞</div>
-                <div style="color:#dc2626; font-size:13px; font-weight:600; margin-top:8px;">Schlecht</div>
-              </a>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:20px 40px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-        <p style="color:#94a3b8; font-size:11px; margin:0; text-align:center;">
-          Dieser Link ist 7 Tage gültig.
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
 }

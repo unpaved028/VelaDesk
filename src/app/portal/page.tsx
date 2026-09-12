@@ -4,12 +4,15 @@ import { getPortalSession } from '@/lib/services/getPortalSession';
 import { portalTicketWhere } from '@/lib/portal/ticketScope';
 import { PortalTicketList } from '@/components/portal/PortalTicketList';
 import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
+import { getTenantFacing } from '@/lib/services/tenantFacing';
+import { portalCopy } from '@/lib/i18n/customerFacing';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PortalHomePage() {
   const { authenticated, session } = await getPortalSession();
   if (!authenticated || !session) redirect('/login');
+  const copy = portalCopy((await getTenantFacing(session.tenantId)).locale);
 
   const tickets = await prisma.ticket.findMany({
     where: portalTicketWhere(session),
@@ -20,8 +23,8 @@ export default async function PortalHomePage() {
   return (
     <div className="space-y-8">
       <PortalPageHeader
-        title="Meine Tickets"
-        description="Nur Vorgänge, die Sie selbst eröffnet haben."
+        title={copy.ticketsTitle}
+        description={copy.ticketsDescription}
       />
       <PortalTicketList
         tickets={tickets.map((ticket) => ({

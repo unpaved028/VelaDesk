@@ -35,6 +35,8 @@ export async function runMspBestPracticesSeed(): Promise<ApiResponse<MspSeedResu
     const data = await seedBestPracticesForTenant(tenant.tenantId);
     revalidatePath('/admin');
     revalidatePath('/admin/taxonomy');
+    revalidatePath('/admin/appearance');
+    revalidatePath('/portal/catalog');
     revalidatePath('/tickets');
     return { success: true, data, error: null };
   } catch (error: unknown) {

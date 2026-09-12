@@ -44,3 +44,26 @@ export const MSP_SAMPLE_TICKETS = [
 ] as const;
 
 export const MSP_SAMPLE_TICKET_SUBJECT = MSP_SAMPLE_TICKETS[0].subject;
+
+/** Optional starter catalog. Tenants edit or replace these — they are not product canon. */
+export const MSP_STARTER_CATALOG_DE = [
+  { title: 'Neues Notebook', description: 'Bestellung eines Standard-Laptops für neue Mitarbeiter oder als Ersatzgerät.', category: 'Hardware' },
+  { title: 'Software-Lizenz', description: 'Lizenzen für Standardsoftware beantragen.', category: 'Software' },
+  { title: 'Diensthandy', description: 'Neues Smartphone inklusive Mobilfunkvertrag anfordern.', category: 'Hardware' },
+  { title: 'VPN-Zugang', description: 'Einrichtung oder Fehlerbehebung für den Remote-Zugriff.', category: 'Zugriff' },
+  { title: 'Monitor und Peripherie', description: 'Zusätzliche Monitore, Dockingstations oder Eingabegeräte.', category: 'Hardware' },
+  { title: 'Sicherheitsvorfall', description: 'Verdächtige Aktivitäten oder Berechtigungsprobleme melden.', category: 'Sicherheit' },
+] as const;
+
+export const MSP_STARTER_CATALOG_EN = [
+  { title: 'New laptop', description: 'Order a standard laptop for a new hire or as a replacement.', category: 'Hardware' },
+  { title: 'Software license', description: 'Request licenses for standard software.', category: 'Software' },
+  { title: 'Work phone', description: 'Request a smartphone and mobile plan.', category: 'Hardware' },
+  { title: 'VPN access', description: 'Set up or fix remote access.', category: 'Access' },
+  { title: 'Monitor and peripherals', description: 'Extra monitors, docks, or input devices.', category: 'Hardware' },
+  { title: 'Security incident', description: 'Report suspicious activity or permission issues.', category: 'Security' },
+] as const;
+
+export function starterCatalogForLocale(locale: string) {
+  return locale === 'en' ? MSP_STARTER_CATALOG_EN : MSP_STARTER_CATALOG_DE;
+}
