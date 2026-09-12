@@ -3,25 +3,33 @@
 import React, { useState } from 'react';
 import { Download, Loader2, CheckCircle2 } from 'lucide-react';
 
+/**
+ * SUPER_ADMIN local snapshot. Errors stay on the page — B1 forbids alert().
+ */
 export const BackupButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleBackup = async () => {
     setIsLoading(true);
     setIsDone(false);
+    setError(null);
 
     try {
       const res = await fetch('/api/admin/backup');
+      const contentType = res.headers.get('Content-Type') || '';
 
       if (!res.ok) {
-        const err = await res.json();
-        alert(`Backup failed: ${err.error || 'Unknown error'}`);
-        setIsLoading(false);
+        if (contentType.includes('application/json')) {
+          const err = (await res.json()) as { error?: string };
+          setError(err.error || 'Download denied.');
+        } else {
+          setError(`Download failed (${res.status}).`);
+        }
         return;
       }
 
-      // Trigger browser download from the response blob
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
       const fileNameMatch = disposition.match(/filename="(.+)"/);
@@ -38,29 +46,32 @@ export const BackupButton = () => {
 
       setIsDone(true);
       setTimeout(() => setIsDone(false), 3000);
-    } catch (error) {
-      alert('Backup download failed. Check console for details.');
-      console.error('Backup error:', error);
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : 'Backup download failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleBackup}
-      disabled={isLoading}
-      className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low dark:bg-white/5 border border-surface-container dark:border-white/10 rounded-lg text-sm font-medium text-on-background dark:text-white hover:bg-surface-bright dark:hover:bg-white/10 transition-colors disabled:opacity-50 shrink-0"
-      title="Download SQLite database backup"
-    >
-      {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : isDone ? (
-        <CheckCircle2 className="w-4 h-4 text-green-500" />
-      ) : (
-        <Download className="w-4 h-4" />
-      )}
-      {isLoading ? 'Downloading...' : isDone ? 'Backup Saved!' : '1-Click Backup'}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={() => void handleBackup()}
+        disabled={isLoading}
+        className="flex shrink-0 items-center gap-2 rounded-lg border border-surface-container bg-surface-container-low px-4 py-2.5 text-sm font-medium text-on-background transition-colors hover:bg-surface-bright disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+        title="Download a consistent SQLite snapshot. SUPER_ADMIN only."
+      >
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isDone ? (
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}
+        {isLoading ? 'Downloading...' : isDone ? 'Snapshot saved' : 'Download snapshot'}
+      </button>
+      {error ? <p className="max-w-xs text-right text-xs text-red-600">{error}</p> : null}
+    </div>
   );
 };

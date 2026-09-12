@@ -43,6 +43,19 @@ export const initCronJobs = () => {
   void startBackupSchedule();
 };
 
+let backupTask: ReturnType<typeof cron.schedule> | null = null;
+
+export function rescheduleBackupJob(expression: string): { ok: true } | { ok: false; error: string } {
+  if (!cron.validate(expression)) {
+    return { ok: false, error: `Invalid backup schedule "${expression}".` };
+  }
+
+  backupTask?.stop();
+  backupTask = cron.schedule(expression, runBackupJob);
+  console.log(`[Cron] Backup job scheduled: ${expression}`);
+  return { ok: true };
+}
+
 async function startBackupSchedule() {
   try {
     const config = await prisma.systemConfig.findUnique({
@@ -50,15 +63,11 @@ async function startBackupSchedule() {
       select: { backupSchedule: true },
     });
     const expression = config?.backupSchedule || '0 3 * * *';
-
-    if (!cron.validate(expression)) {
-      console.error(`[Cron] Invalid backupSchedule "${expression}". Falling back to 0 3 * * *.`);
-      cron.schedule('0 3 * * *', runBackupJob);
-      return;
+    const scheduled = rescheduleBackupJob(cron.validate(expression) ? expression : '0 3 * * *');
+    if (!scheduled.ok) {
+      console.error(`[Cron] ${scheduled.error} Falling back to 0 3 * * *.`);
+      rescheduleBackupJob('0 3 * * *');
     }
-
-    cron.schedule(expression, runBackupJob);
-    console.log(`[Cron] Backup job scheduled: ${expression}`);
   } catch (error) {
     console.error('[Cron] Failed to schedule backup job:', error);
   }
@@ -67,7 +76,16 @@ async function startBackupSchedule() {
 async function runBackupJob() {
   console.log('[Cron] Running offsite backup...');
   try {
-    await BackupWorker.executeBackup();
+    const result = await BackupWorker.executeBackup();
+    if (!result.ok) {
+      console.error('[Cron] Backup failed:', result.error);
+      return;
+    }
+    if (result.skipped) {
+      console.log('[Cron] Backup skipped:', result.reason);
+      return;
+    }
+    console.log(`[Cron] Backup uploaded: ${result.fileName} → ${result.destination}`);
   } catch (error) {
     console.error('[Cron] Backup job failed:', error);
   }

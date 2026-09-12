@@ -1,14 +1,13 @@
+import { createReadStream } from 'fs';
+import fs from 'fs';
 import { NextResponse } from 'next/server';
-import { createReadStream, statSync } from 'fs';
 import { requireSuperAdminContext, isDevAuthBypassEnabled } from '@/lib/auth/session';
-import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
+import { createSqliteSnapshotFile } from '@/lib/services/sqliteBackup';
 
 /**
  * GET /api/admin/backup
  *
- * Streams the SQLite database file. Instance-level operation — SUPER_ADMIN only.
- * Auth.js session is the source of truth (SOP-05). DEV_BYPASS_AUTH is ignored
- * in production.
+ * Streams a consistent SQLite snapshot. SUPER_ADMIN only.
  */
 export async function GET(request: Request) {
   const cookieHeader = request.headers.get('cookie') ?? '';
@@ -27,21 +26,9 @@ export async function GET(request: Request) {
     }
   }
 
-  const dbPath = getSqliteDatabasePath();
-
   try {
-    const stat = statSync(dbPath);
-    if (!stat.isFile()) {
-      return NextResponse.json(
-        { success: false, data: null, error: 'Database file not found.' },
-        { status: 404 }
-      );
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const fileName = `VelaDesk-backup-${timestamp}.db`;
-
-    const stream = createReadStream(dbPath);
+    const snapshot = await createSqliteSnapshotFile();
+    const stream = createReadStream(snapshot.path);
 
     const webStream = new ReadableStream({
       start(controller) {
@@ -49,23 +36,26 @@ export async function GET(request: Request) {
           controller.enqueue(new Uint8Array(Buffer.from(chunk)));
         });
         stream.on('end', () => {
+          fs.rmSync(snapshot.path, { force: true });
           controller.close();
         });
         stream.on('error', (err) => {
+          fs.rmSync(snapshot.path, { force: true });
           controller.error(err);
         });
       },
       cancel() {
         stream.destroy();
-      }
+        fs.rmSync(snapshot.path, { force: true });
+      },
     });
 
     return new Response(webStream, {
       status: 200,
       headers: {
         'Content-Type': 'application/x-sqlite3',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': stat.size.toString(),
+        'Content-Disposition': `attachment; filename="${snapshot.fileName}"`,
+        'Content-Length': snapshot.size.toString(),
         'Cache-Control': 'no-store',
       },
     });

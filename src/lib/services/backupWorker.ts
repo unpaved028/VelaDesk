@@ -1,98 +1,73 @@
-import fs from 'fs';
-import zlib from 'zlib';
-import { PrismaClient } from '@prisma/client';
-import { GraphApiHelper } from '../api/graph';
+import { prisma } from '@/lib/db/prisma';
+import { GraphApiHelper } from '@/lib/api/graph';
+import type { BackupRunResult } from '@/types/backup';
+import { BACKUP_RETENTION_COUNT, looksLikeSharePointUrl, resolveBackupTarget } from './backupTarget';
 import { decryptSecret } from './encryption';
-import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
+import { GraphDriveClient } from './graphDrive';
+import { createSqliteBackupGzip } from './sqliteBackup';
 
-const prisma = new PrismaClient();
+export async function runOffsiteBackup(): Promise<BackupRunResult> {
+  const config = await prisma.systemConfig.findUnique({
+    where: { id: 'global' },
+    select: {
+      backupTargetMailbox: true,
+      backupTargetFolder: true,
+    },
+  });
 
-export class BackupWorker {
-  /**
-   * Zips the database and uploads it to OneDrive/SharePoint via Graph API.
-   */
-  public static async executeBackup(): Promise<void> {
-    console.log('🔄 [BackupWorker] Starting offsite backup process...');
+  const mailboxAddress = config?.backupTargetMailbox?.trim() || null;
+  const folderOrUrl = config?.backupTargetFolder?.trim() || '';
 
-    try {
-      // 1. Fetch SystemConfig to get backup target settings
-      const systemConfig = await prisma.systemConfig.findFirst();
-      if (!systemConfig || !systemConfig.backupTargetMailbox) {
-        console.log('ℹ️ [BackupWorker] No backupTargetMailbox configured. Aborting backup.');
-        return;
-      }
-
-      // 2. Fetch the corresponding MailboxConfig
-      const mailboxConfig = await prisma.mailboxConfig.findFirst({
-        where: {
-          mailboxAddress: systemConfig.backupTargetMailbox,
-          isActive: true
-        }
-      });
-
-      if (!mailboxConfig) {
-        throw new Error(`MailboxConfig for ${systemConfig.backupTargetMailbox} not found or inactive.`);
-      }
-
-      // 3. Compress the database
-      const dbPath = getSqliteDatabasePath();
-      if (!fs.existsSync(dbPath)) {
-        throw new Error(`Database not found at ${dbPath}`);
-      }
-
-      const backupFileName = `VelaDesk-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.db.gz`;
-      const compressedBuffer = await this.gzipFile(dbPath);
-      console.log(`✅ [BackupWorker] Database compressed successfully (${compressedBuffer.length} bytes).`);
-
-      // 4. Initialize Graph API Helper
-      const clientSecret = decryptSecret(mailboxConfig.clientSecret, mailboxConfig.tenantId);
-      const graphHelper = new GraphApiHelper({
-        tenantId: mailboxConfig.msTenantId,
-        clientId: mailboxConfig.clientId,
-        clientSecret: clientSecret,
-      });
-
-      const token = await graphHelper.getAccessToken();
-
-      // 5. Upload to OneDrive / SharePoint
-      const targetFolder = systemConfig.backupTargetFolder.replace(/^\/+|\/+$/g, ''); // strip slashes
-      const uploadPath = targetFolder ? `${targetFolder}/${backupFileName}` : backupFileName;
-      
-      const endpoint = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailboxConfig.mailboxAddress)}/drive/root:/${uploadPath}:/content`;
-      
-      const response = await fetch(endpoint, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/gzip'
-        },
-        body: new Uint8Array(compressedBuffer),
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Graph API Upload Failed: ${response.status} - ${errText}`);
-      }
-
-      console.log(`✅ [BackupWorker] Backup uploaded successfully to ${uploadPath}`);
-
-    } catch (error) {
-      console.error('❌ [BackupWorker] Backup failed:', error);
-    }
+  if (!mailboxAddress && !looksLikeSharePointUrl(folderOrUrl)) {
+    return { ok: true, skipped: true, reason: 'no_target' };
   }
 
-  private static gzipFile(filePath: string): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const readStream = fs.createReadStream(filePath);
-      const gzip = zlib.createGzip();
+  if (!mailboxAddress) {
+    return {
+      ok: false,
+      error: 'Select the mailbox whose Graph app should upload the backup.',
+    };
+  }
 
-      readStream.pipe(gzip);
+  // Instance-level vault: the mailbox is the Graph credential source, not a tenant-scoped ticket store.
+  const mailbox = await prisma.mailboxConfig.findFirst({
+    where: { mailboxAddress, isActive: true },
+  });
 
-      gzip.on('data', (chunk) => chunks.push(chunk));
-      gzip.on('end', () => resolve(Buffer.concat(chunks)));
-      gzip.on('error', (err) => reject(err));
-      readStream.on('error', (err) => reject(err));
+  if (!mailbox) {
+    return { ok: false, error: `No active mailbox config for ${mailboxAddress}.` };
+  }
+
+  try {
+    const target = resolveBackupTarget({ mailboxAddress, folderOrUrl });
+    const clientSecret = decryptSecret(mailbox.clientSecret, mailbox.tenantId);
+    const graph = new GraphApiHelper({
+      tenantId: mailbox.msTenantId,
+      clientId: mailbox.clientId,
+      clientSecret,
     });
+    const token = await graph.getAccessToken();
+    const drive = new GraphDriveClient(token, target);
+    const snapshot = await createSqliteBackupGzip();
+    await drive.upload(snapshot.buffer, snapshot.fileName);
+    await drive.prune(BACKUP_RETENTION_COUNT);
+
+    return {
+      ok: true,
+      skipped: false,
+      fileName: snapshot.fileName,
+      bytes: snapshot.buffer.length,
+      destination: drive.destination(),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Offsite backup failed.';
+    console.error('[BackupWorker] Backup failed:', message);
+    return { ok: false, error: message };
+  }
+}
+
+export class BackupWorker {
+  public static async executeBackup(): Promise<BackupRunResult> {
+    return runOffsiteBackup();
   }
 }

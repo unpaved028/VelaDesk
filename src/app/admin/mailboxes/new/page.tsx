@@ -191,7 +191,7 @@ const AutomatedFlow = ({ onBack }: { onBack: () => void }) => {
           <div className="max-w-2xl space-y-6">
              <h2 className="text-2xl font-bold dark:text-white">PowerShell Setup</h2>
              <p className="text-on-surface-variant dark:text-on-surface/50 leading-relaxed">
-                Das Skript legt die Entra-App an (Mail.ReadWrite + Mail.Send), testet die Inbox und schreibt die Werte nach VelaDesk. Token gilt 15 Minuten.
+                Das Skript legt die Entra-App an (Mail.ReadWrite, Mail.Send, Files.ReadWrite.All, Sites.ReadWrite.All), testet Inbox und Drive und schreibt die Werte nach VelaDesk. Token gilt 15 Minuten.
              </p>
 
              <label className="block text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50">
@@ -380,7 +380,7 @@ const ManualFlow = ({ onBack }: { onBack: () => void }) => {
             <div className="p-8 pt-0 animate-in fade-in duration-300">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <MiniGuideItem icon={AppWindow} text="App-Registrierung anlegen (VelaDesk-Service)" />
-                  <MiniGuideItem icon={Mail} text="Application permissions Mail.ReadWrite and Mail.Send" />
+                  <MiniGuideItem icon={Mail} text="Application permissions Mail.ReadWrite, Mail.Send, Files.ReadWrite.All, Sites.ReadWrite.All" />
                   <MiniGuideItem icon={ShieldCheck} text="Admin-Consent für Permissions gewähren" />
                   <MiniGuideItem icon={Key} text="Client Secret generieren & Wert kopieren" />
                </div>

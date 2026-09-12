@@ -44,7 +44,7 @@ export async function GET() {
       headers: {
         // Short cache to avoid hammering DB on every request,
         // but short enough to detect setup completion quickly
-        'Cache-Control': 'private, max-age=5, stale-while-revalidate=10',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {

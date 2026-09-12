@@ -271,8 +271,8 @@ model SystemConfig {
 
   // Offsite Backup Configuration
   backupSchedule      String  @default("0 3 * * *") // Cron pattern, default 03:00 daily
-  backupTargetMailbox String? // Email address of the MailboxConfig to use for OneDrive upload
-  backupTargetFolder  String  @default("VelaDeskBackups") // Target folder in OneDrive or SharePoint
+  backupTargetMailbox String? // MailboxConfig used as the Graph app identity (and OneDrive owner when no SharePoint URL)
+  backupTargetFolder  String  @default("VelaDeskBackups") // OneDrive folder, or https://tenant.sharepoint.com/sites/IT[/folder]
 
   // Cloudflare Tunnel Configuration
   cloudflareTunnelToken String? // MUST be encrypted via encryptSecret(value, "SYSTEM") — SOP-05

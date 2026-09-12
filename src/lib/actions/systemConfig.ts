@@ -1,15 +1,26 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import cron from 'node-cron';
 import { getErrorMessage } from '@/lib/errors';
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
+import { requireAdminContext } from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
+import { parseSharePointSiteUrl, sanitizeFolder } from '@/lib/services/backupTarget';
+import { rescheduleBackupJob } from '@/lib/services/cron';
 
 export interface ApiResponse<T> {
   success: boolean;
   data: T | null;
   error: string | null;
+}
+
+function normalizeBackupTargetFolder(value: string): string {
+  const trimmed = value.trim() || 'VelaDeskBackups';
+  const parsed = parseSharePointSiteUrl(trimmed);
+  if (parsed) {
+    return `https://${parsed.hostname}${parsed.serverRelativePath}/${parsed.folder}`;
+  }
+  return sanitizeFolder(trimmed);
 }
 
 export async function getSystemConfig() {
@@ -77,15 +88,40 @@ export async function saveBackupConfig(data: {
   backupTargetMailbox: string | null;
   backupTargetFolder: string;
 }) {
+  const auth = await requireAdminContext();
+  if (!auth.ok) {
+    return { success: false, data: null, error: auth.error };
+  }
+
+  if (!cron.validate(data.backupSchedule.trim())) {
+    return {
+      success: false,
+      data: null,
+      error: 'Invalid cron expression. Example: 0 3 * * *',
+    };
+  }
+
   try {
+    const folder = normalizeBackupTargetFolder(data.backupTargetFolder);
     const config = await prisma.systemConfig.upsert({
       where: { id: 'global' },
-      update: data,
+      update: {
+        backupSchedule: data.backupSchedule.trim(),
+        backupTargetMailbox: data.backupTargetMailbox,
+        backupTargetFolder: folder,
+      },
       create: {
         id: 'global',
-        ...data,
+        backupSchedule: data.backupSchedule.trim(),
+        backupTargetMailbox: data.backupTargetMailbox,
+        backupTargetFolder: folder,
       },
     });
+
+    const scheduled = rescheduleBackupJob(data.backupSchedule.trim());
+    if (!scheduled.ok) {
+      return { success: false, data: null, error: scheduled.error };
+    }
 
     revalidatePath('/admin/system');
 

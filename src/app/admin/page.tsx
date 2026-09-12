@@ -1,5 +1,6 @@
 import React from 'react';
 import { prisma } from '@/lib/db/prisma';
+import { isSuperAdminRole, requireAdminContext } from '@/lib/auth/session';
 import { BackupButton } from '@/components/admin/BackupButton';
 import { MspSeedButton } from '@/components/admin/MspSeedButton';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -7,6 +8,9 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
+  const admin = await requireAdminContext();
+  const canDownloadBackup = admin.ok && isSuperAdminRole(admin.ctx.role);
+
   const [tenantCount, workspaceCount, agentCount, ticketCount, mailboxCount, categoryCount, config] =
     await Promise.all([
       prisma.tenant.count(),
@@ -56,7 +60,7 @@ export default async function AdminDashboard() {
         actions={
           <>
             {categoryCount === 0 ? <MspSeedButton /> : null}
-            <BackupButton />
+            {canDownloadBackup ? <BackupButton /> : null}
           </>
         }
       />

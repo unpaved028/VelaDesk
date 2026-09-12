@@ -58,7 +58,14 @@ export async function triggerAppUpdate(): Promise<ApiResponse<string>> {
 
     // Attempt to trigger offsite backup as well if configured
     try {
-      await BackupWorker.executeBackup();
+      const offsite = await BackupWorker.executeBackup();
+      if (!offsite.ok) {
+        console.warn('[Update Engine] Offsite backup failed, continuing with local copy:', offsite.error);
+      } else if (offsite.skipped) {
+        console.log('[Update Engine] Offsite backup skipped:', offsite.reason);
+      } else {
+        console.log(`[Update Engine] Offsite backup uploaded: ${offsite.fileName}`);
+      }
     } catch (e) {
       console.warn('Offsite backup failed during update, but continuing with local backup.', e);
     }

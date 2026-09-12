@@ -7,28 +7,28 @@ import { completeFirstRunSetup } from '@/app/actions/setupActions';
 import { runMspBestPracticesSeed } from '@/lib/actions/seedActions';
 import { APP_VERSION } from '@/lib/appVersion';
 import { VelaLogo } from '@/components/ui/VelaLogo';
+import { SetupRestoreStep } from '@/components/setup/SetupRestoreStep';
 import { 
   ChevronRight, 
   ChevronLeft, 
   Globe, 
   User, 
-  ShieldCheck, 
   Shield,
   CheckCircle2,
   Mail,
   Lock,
-  Workflow,
   Zap,
-  Database,
   AlertCircle
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export default function SetupWizardPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<'choose' | 'fresh' | 'restore'>('choose');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const totalSteps = 5;
+  const totalSteps = mode === 'restore' ? 2 : 5;
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -42,7 +42,7 @@ export default function SetupWizardPage() {
     setError(null);
 
     // Step 2 → 3: Validate admin fields
-    if (step === 2) {
+    if (step === 2 && mode === 'fresh') {
       if (!firstName.trim() || !lastName.trim() || !adminEmail.trim()) {
         setError('All fields are required to create the administrator account.');
         return;
@@ -96,6 +96,9 @@ export default function SetupWizardPage() {
 
   const prevStep = () => {
     setError(null);
+    if (step === 2) {
+      setMode('choose');
+    }
     setStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -162,21 +165,50 @@ export default function SetupWizardPage() {
               {step === 1 && (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-2xl font-black tracking-tight mb-2">Systems Analysis</h2>
+                    <h2 className="text-2xl font-black tracking-tight mb-2">First run</h2>
                     <p className="text-sm text-on-surface-variant/60 leading-relaxed">
-                      We&apos;ve analyzed your environment. Everything looks ready.
+                      This instance has no administrator yet. Restore an existing database, or create a new one.
+                      Do not run the fresh-install wizard after a restore.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <StatusItem icon={ShieldCheck} label="SQLite Database" status="Ready" />
-                    <StatusItem icon={Workflow} label="Node.js Runtime" status="Ready" />
-                    <StatusItem icon={Globe} label="Network Access" status="Online" />
-                    <StatusItem icon={Lock} label="Encryption Module" status="Active" />
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('fresh');
+                          setStep(2);
+                        }}
+                        className="group p-6 rounded-[24px] bg-white/5 border border-white/10 hover:border-white/30 text-left"
+                      >
+                        <div className="text-sm font-bold mb-1">Fresh install</div>
+                        <div className="text-[10px] text-white/40">Create a new admin and an empty instance.</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('restore');
+                          setStep(2);
+                        }}
+                        className="group p-6 rounded-[24px] bg-tertiary/10 border border-tertiary/30 hover:border-tertiary/60 text-left"
+                      >
+                        <div className="text-sm font-bold mb-1">Restore from backup</div>
+                        <div className="text-[10px] text-white/40">Upload a file or pull from OneDrive / SharePoint.</div>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {step === 2 && (
+              {step === 2 && mode === 'restore' && (
+                <SetupRestoreStep
+                  onError={setError}
+                  isSubmitting={isSubmitting}
+                  setIsSubmitting={setIsSubmitting}
+                />
+              )}
+
+              {step === 2 && mode === 'fresh' && (
                 <div className="space-y-8">
                   <div>
                     <h2 className="text-2xl font-black tracking-tight mb-2">Global Administrator</h2>
@@ -300,24 +332,6 @@ export default function SetupWizardPage() {
                         <div className="text-[10px] text-on-surface-variant/40 leading-relaxed font-medium">Pre-fill categories, SLAs, and three sample tickets. Entra is not required.</div>
                       </div>
                     </button>
-
-                    {/* Option 3: Restore */}
-                    <button 
-                      onClick={() => alert('Disaster Recovery Wizard would start here')}
-                      className="group md:col-span-2 relative p-6 rounded-[24px] bg-tertiary/10 border border-tertiary/20 hover:border-tertiary/50 transition-all hover:bg-tertiary/20 flex items-center gap-6 active:scale-[0.98] overflow-hidden"
-                    >
-                      <div className="w-14 h-14 rounded-2xl bg-tertiary flex items-center justify-center shadow-lg shadow-tertiary/40 shrink-0">
-                        <Database className="w-7 h-7 text-on-tertiary" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="text-sm font-bold text-white">Restore from Backup</div>
-                          <span className="px-2 py-0.5 bg-tertiary text-[8px] font-black uppercase tracking-widest rounded-full">Disaster Recovery</span>
-                        </div>
-                        <div className="text-[10px] text-white/50 leading-relaxed font-medium">Upload an existing VelaDesk DB or sync directly from your OneDrive vault.</div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-tertiary group-hover:translate-x-1 transition-transform" />
-                    </button>
                   </div>
                 </div>
               )}
@@ -325,28 +339,27 @@ export default function SetupWizardPage() {
             </div>
 
             {/* Navigation Buttons */}
-            {step < 5 && (
+            {(step > 1 && step < 5 && mode === 'fresh') || (step === 2 && mode === 'restore') ? (
               <div className="mt-12 flex items-center justify-between">
                 <button 
                   onClick={prevStep}
-                  disabled={step === 1}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
-                    step === 1 ? 'opacity-0 pointer-events-none' : 'hover:bg-white/5'
-                  }`}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:bg-white/5"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Back
                 </button>
-                <button 
-                  onClick={handleNextStep}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isSubmitting ? "Processing..." : (step === 4 ? "Finalize Setup" : "Next Step")}
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                {mode === 'fresh' && (
+                  <button 
+                    onClick={handleNextStep}
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Processing..." : (step === 4 ? "Finalize Setup" : "Next Step")}
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -365,21 +378,6 @@ export default function SetupWizardPage() {
     </div>
   );
 }
-
-// Internal Helper Components
-import type { LucideIcon } from 'lucide-react';
-
-const StatusItem = ({ icon: Icon, label, status }: { icon: LucideIcon, label: string, status: string }) => (
-  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
-    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-      <Icon className="w-5 h-5 text-primary" />
-    </div>
-    <div>
-      <div className="text-[10px] font-black uppercase tracking-tighter opacity-40 mb-0.5">{label}</div>
-      <div className="text-xs font-bold text-emerald-400">{status}</div>
-    </div>
-  </div>
-);
 
 interface InputGroupProps {
   label: string;

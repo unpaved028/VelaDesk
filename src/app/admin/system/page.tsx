@@ -5,13 +5,15 @@ import { UpdateDashboard } from '../../../components/admin/UpdateDashboard';
 import { BackupConfigForm } from '../../../components/admin/BackupConfigForm';
 import { NetworkSecurityForm } from '../../../components/admin/NetworkSecurityForm';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
-import { PrismaClient } from '@prisma/client';
+import { isSuperAdminRole, requireAdminContext } from '@/lib/auth/session';
+import { prisma } from '@/lib/db/prisma';
 
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
-
 export default async function SystemConfigPage() {
+  const auth = await requireAdminContext();
+  const canRestore = auth.ok && isSuperAdminRole(auth.ctx.role);
+
   const [result, workspaces, mailboxes] = await Promise.all([
     getSystemConfig(),
     prisma.workspace.findMany({
@@ -84,6 +86,7 @@ export default async function SystemConfigPage() {
               backupTargetFolder: result.data.backupTargetFolder,
             }}
             mailboxes={mailboxes}
+            canRestore={canRestore}
           />
         </div>
 

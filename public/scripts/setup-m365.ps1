@@ -4,8 +4,9 @@
 
 .DESCRIPTION
     Creates an Entra app registration with the application permissions VelaDesk
-    actually uses (Mail.ReadWrite + Mail.Send), grants admin consent, creates a
-    client secret, and tests Inbox access on the shared mailbox.
+    actually uses (Mail.ReadWrite, Mail.Send, Files.ReadWrite.All,
+    Sites.ReadWrite.All), grants admin consent, creates a client secret, and
+    tests Inbox plus OneDrive access on the mailbox.
 
     Mail.ReadWrite.Shared is delegated-only and does not work with the
     client-credentials flow in graphMail.ts.
@@ -17,7 +18,8 @@
     Shared mailbox, e.g. TestVela@jung-it.consulting
 
 .PARAMETER VelaDeskApiUrl
-    VelaDesk provision URL. Default: http://pi.local:3000/api/mailboxes/provision
+    This instance's provision URL, e.g. https://helpdesk.example.com/api/mailboxes/provision.
+    Required unless -SkipPush. Copy the command from Admin → Mailboxes so the URL matches this install.
 
 .PARAMETER SetupToken
     Optional. One-time token from the admin UI. Not needed for the first mailbox.
@@ -30,14 +32,14 @@
     Without it the app can read/send tenant-wide.
 
 .EXAMPLE
-    .\setup-m365.ps1 -MailboxAddress "TestVela@jung-it.consulting"
+    .\setup-m365.ps1 -MailboxAddress "support@contoso.com" -VelaDeskApiUrl "https://helpdesk.contoso.com/api/mailboxes/provision"
 #>
 
 param (
     [Parameter(Mandatory = $true)]
     [string]$MailboxAddress,
 
-    [string]$VelaDeskApiUrl = "http://pi.local:3000/api/mailboxes/provision",
+    [string]$VelaDeskApiUrl,
 
     [string]$SetupToken,
 
@@ -51,9 +53,15 @@ param (
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+if (-not $SkipPush -and -not $VelaDeskApiUrl) {
+    throw "VelaDeskApiUrl is required (copy the command from Admin → Mailboxes). Use -SkipPush to print credentials only."
+}
+
 # Well-known Graph application role IDs (fallback if AppRoles are not hydrated).
 $MailReadWriteRoleId = [Guid]"e2a3a72e-5f79-4c64-b1b1-878b674786c9"
 $MailSendRoleId = [Guid]"b633e1c5-b582-4048-a93e-9f11b44c7e96"
+$FilesReadWriteAllRoleId = [Guid]"75359482-378d-4052-8f01-80520e7db3cd"
+$SitesReadWriteAllRoleId = [Guid]"9492366f-7969-46a4-8d15-ed1a20078fff"
 $GraphAppId = "00000003-0000-0000-c000-000000000000"
 
 if (-not $AppDisplayName) {
@@ -162,12 +170,16 @@ $graphSp = Get-MgServicePrincipal -Filter "appId eq '$GraphAppId'" -Property "id
 
 $readWriteId = Get-GraphAppRoleId -GraphSp $graphSp -Value "Mail.ReadWrite" -Fallback $MailReadWriteRoleId
 $sendId = Get-GraphAppRoleId -GraphSp $graphSp -Value "Mail.Send" -Fallback $MailSendRoleId
+$filesId = Get-GraphAppRoleId -GraphSp $graphSp -Value "Files.ReadWrite.All" -Fallback $FilesReadWriteAllRoleId
+$sitesId = Get-GraphAppRoleId -GraphSp $graphSp -Value "Sites.ReadWrite.All" -Fallback $SitesReadWriteAllRoleId
 
 $requiredAccess = @{
     ResourceAppId  = $GraphAppId
     ResourceAccess = @(
         @{ Id = $readWriteId; Type = "Role" },
-        @{ Id = $sendId; Type = "Role" }
+        @{ Id = $sendId; Type = "Role" },
+        @{ Id = $filesId; Type = "Role" },
+        @{ Id = $sitesId; Type = "Role" }
     )
 }
 
@@ -186,8 +198,8 @@ if (-not $sp) {
     $sp = New-MgServicePrincipal -AppId $app.AppId
 }
 
-Write-Host "`n[4/6] Admin consent (Mail.ReadWrite + Mail.Send)..." -ForegroundColor Yellow
-$desiredRoles = @($readWriteId, $sendId)
+Write-Host "`n[4/6] Admin consent (Mail + Files + Sites)..." -ForegroundColor Yellow
+$desiredRoles = @($readWriteId, $sendId, $filesId, $sitesId)
 $existingAssignments = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $sp.Id -ErrorAction SilentlyContinue
 foreach ($roleId in $desiredRoles) {
     $already = $existingAssignments | Where-Object { $_.AppRoleId -eq $roleId -and $_.ResourceId -eq $graphSp.Id }
@@ -273,6 +285,17 @@ if (-not $token) {
     }
     if (-not $inboxOk) {
         Write-Host "Inbox test failed. Values are already printed above - save them in VelaDesk." -ForegroundColor Red
+    } elseif ($token) {
+        Write-Host "OneDrive probe for $MailboxAddress ..." -ForegroundColor Yellow
+        try {
+            $null = Invoke-RestMethod -Method Get `
+                -Uri "https://graph.microsoft.com/v1.0/users/$encodedMailbox/drive" `
+                -Headers @{ Authorization = "Bearer $token" }
+            Write-Host "OneDrive reachable. VelaDesk can use this mailbox as a backup vault." -ForegroundColor Green
+        } catch {
+            Write-Host "No OneDrive on this mailbox (normal for shared mailboxes)." -ForegroundColor Yellow
+            Write-Host "In VelaDesk -> System, set a SharePoint site URL or pick a licensed user." -ForegroundColor Yellow
+        }
     }
 }
 

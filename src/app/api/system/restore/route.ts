@@ -1,73 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import fs from 'fs';
-import zlib from 'zlib';
+import { revalidatePath } from 'next/cache';
 import { requireSuperAdminContext } from '@/lib/auth/session';
-import { getSqliteDatabasePath } from '@/lib/db/sqlitePath';
 import { getErrorMessage } from '@/lib/errors';
+import { applySqliteRestore } from '@/lib/services/sqliteBackup';
+import { isSystemInitialized } from '@/lib/services/systemInit';
+import type { ApiResponse } from '@/types/api';
 
-const prisma = new PrismaClient();
+const MAX_BACKUP_BYTES = 80 * 1024 * 1024;
 
+/**
+ * First-run: no session required (same trust boundary as the setup wizard).
+ * After init: SUPER_ADMIN only.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const authResult = await requireSuperAdminContext();
-    if (!authResult.ok) {
-      const status = authResult.error === 'Not authenticated.' ? 401 : 403;
-      return NextResponse.json({ success: false, data: null, error: authResult.error }, { status });
+    const initialized = await isSystemInitialized();
+    if (initialized) {
+      const authResult = await requireSuperAdminContext();
+      if (!authResult.ok) {
+        const status = authResult.error === 'Not authenticated.' ? 401 : 403;
+        return NextResponse.json(
+          { success: false, data: null, error: authResult.error } as ApiResponse<null>,
+          { status }
+        );
+      }
     }
 
     const formData = await req.formData();
-    const backupFile = formData.get('backup') as File;
-
-    if (!backupFile) {
-      return NextResponse.json({ success: false, data: null, error: 'No backup file provided' }, { status: 400 });
+    const backupFile = formData.get('file') ?? formData.get('backup');
+    if (!(backupFile instanceof File)) {
+      return NextResponse.json(
+        { success: false, data: null, error: 'No backup file provided.' } as ApiResponse<null>,
+        { status: 400 }
+      );
     }
 
-    const arrayBuffer = await backupFile.arrayBuffer();
-    let buffer = Buffer.from(arrayBuffer);
-
-    // 2. Disconnect active database connection
-    console.log('🔄 [RestoreEngine] Disconnecting active database connections...');
-    await prisma.$disconnect();
-
-    // 3. Decompress if it's a gzipped backup
-    if (backupFile.name.endsWith('.gz')) {
-      console.log('📦 [RestoreEngine] Decompressing gzipped backup...');
-      buffer = await new Promise((resolve, reject) => {
-        zlib.gunzip(buffer, (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        });
-      });
+    if (backupFile.size > MAX_BACKUP_BYTES) {
+      return NextResponse.json(
+        { success: false, data: null, error: 'Backup file is larger than 80 MB.' } as ApiResponse<null>,
+        { status: 400 }
+      );
     }
 
-    // 4. Overwrite database
-    const dbPath = getSqliteDatabasePath();
-    console.log(`💾 [RestoreEngine] Overwriting active database at ${dbPath}...`);
-    fs.writeFileSync(dbPath, buffer);
-
-    // 5. Prisma will auto-reconnect on the next query. We can do a dummy query.
-    await prisma.$connect();
-    
-    // We can run a dummy query to verify that the database is valid
-    const userCount = await prisma.user.count();
-    console.log(`✅ [RestoreEngine] Database successfully restored and reconnected! Users count: ${userCount}`);
+    const payload = Buffer.from(await backupFile.arrayBuffer());
+    const result = await applySqliteRestore(payload);
+    revalidatePath('/', 'layout');
 
     return NextResponse.json({
       success: true,
-      data: { message: 'Database restored successfully' },
-      error: null
-    }, { status: 200 });
-
+      data: { message: 'Database restored successfully.', userCount: result.userCount },
+      error: null,
+    } satisfies ApiResponse<{ message: string; userCount: number }>);
   } catch (error: unknown) {
-    console.error('❌ [RestoreEngine] Error during restore:', error);
-    // Best effort reconnect
-    await prisma.$connect().catch(e => console.error('Failed to reconnect after error:', e));
-
-    return NextResponse.json({
-      success: false,
-      data: null,
-      error: getErrorMessage(error, 'Internal Server Error during restore')
-    }, { status: 500 });
+    console.error('[RestoreEngine] Restore failed:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        data: null,
+        error: getErrorMessage(error, 'Failed to restore database from backup'),
+      } as ApiResponse<null>,
+      { status: 500 }
+    );
   }
 }
