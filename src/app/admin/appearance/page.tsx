@@ -36,7 +36,10 @@ export default async function AdminAppearancePage() {
         />
         <LogoUpload hasLogo={appearance.data.hasLogo} />
         {mail.error ? <p className="mb-4 text-sm text-red-600">{mail.error}</p> : null}
-        <MailTemplateEditor templates={mail.data ?? []} />
+        <MailTemplateEditor
+          templates={mail.data ?? []}
+          brandName={appearance.data.brandName || appearance.data.name}
+        />
         {catalog.error ? <p className="mb-4 text-sm text-red-600">{catalog.error}</p> : null}
         <CatalogManager initialItems={catalog.data ?? []} />
       </div>

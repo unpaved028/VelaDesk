@@ -17,7 +17,14 @@ export async function createAsset(data: unknown) {
     }
 
     const assetData = validation.data;
-    
+    if (assetData.customerId) {
+      const customer = await prisma.customer.findFirst({
+        where: { id: assetData.customerId, tenantId },
+        select: { id: true },
+      });
+      if (!customer) return createErrorResponse('Customer not found.');
+    }
+
     // Golden Rule: ALWAYS enforce tenantId
     const newAsset = await prisma.asset.create({
       data: {
@@ -70,6 +77,13 @@ export async function updateAsset(data: unknown) {
     }
 
     const { id, ...updateData } = validation.data;
+    if (updateData.customerId) {
+      const customer = await prisma.customer.findFirst({
+        where: { id: updateData.customerId, tenantId },
+        select: { id: true },
+      });
+      if (!customer) return createErrorResponse('Customer not found.');
+    }
 
     // Golden Rule: UPDATE with strict tenant isolation
     const updatedAsset = await prisma.asset.updateMany({

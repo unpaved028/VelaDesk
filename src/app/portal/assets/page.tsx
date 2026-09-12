@@ -16,7 +16,10 @@ export default async function PortalAssetsPage() {
   const assets = await prisma.asset.findMany({
     where: { tenantId: session.tenantId },
     orderBy: { name: 'asc' },
-    include: { assignedTo: { select: { name: true, email: true } } },
+    include: {
+      assignedTo: { select: { name: true, email: true } },
+      customer: { select: { name: true, company: true } },
+    },
   });
 
   return (
@@ -38,6 +41,7 @@ export default async function PortalAssetsPage() {
               <p className="text-[11px] text-on-surface-variant mt-1">
                 {asset.type}
                 {asset.serialNumber ? ` · SN ${asset.serialNumber}` : ''}
+                {asset.customer?.company || asset.customer?.name ? ` · ${asset.customer.company || asset.customer.name}` : ''}
                 {asset.assignedTo ? ` · ${asset.assignedTo.name}` : ''}
               </p>
             </div>

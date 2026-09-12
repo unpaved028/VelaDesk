@@ -40,13 +40,28 @@ export function createErrorResponse(message: string): { success: false; data: nu
 // Asset Validation Schemas
 export const AssetIdSchema = z.string().cuid();
 
+const optionalCuid = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  z.string().cuid().nullable().optional()
+);
+
+const optionalText = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  z.string().nullable().optional()
+);
+
 export const CreateAssetSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.string().min(1, "Type is required"),
   status: z.string().min(1, "Status is required"),
-  serialNumber: z.string().optional().nullable(),
-  warrantyExpires: z.coerce.date().optional().nullable(),
-  assignedToId: z.string().optional().nullable(),
+  serialNumber: optionalText,
+  warrantyExpires: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.coerce.date().nullable().optional()
+  ),
+  location: optionalText,
+  customerId: optionalCuid,
+  assignedToId: optionalCuid,
 });
 
 export const UpdateAssetSchema = CreateAssetSchema.partial().extend({

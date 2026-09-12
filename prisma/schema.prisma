@@ -226,6 +226,7 @@ model Customer {
   name     String
   email    String
   company  String?
+  assets   Asset[]
 
   @@index([tenantId])
 }
@@ -359,6 +360,10 @@ model Asset {
   status          String
   serialNumber    String?
   warrantyExpires DateTime?
+  location        String?
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
 
   assignedToId String?
   assignedTo   User?    @relation(fields: [assignedToId], references: [id])
@@ -368,6 +373,7 @@ model Asset {
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
+  @@index([customerId])
 }
 
 // 11. Approval Workflow Engine

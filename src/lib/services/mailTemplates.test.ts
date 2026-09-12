@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyTemplate, assertTicketToken, defaultMailTemplate } from './mailTemplates';
+import { applyTemplate } from './templateRender';
+import { assertTicketToken, defaultMailTemplate } from './mailTemplates';
 
 describe('applyTemplate', () => {
   it('fills placeholders and escapes HTML values', () => {

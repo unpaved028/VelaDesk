@@ -9,59 +9,16 @@ import {
   ticketAckSubject,
 } from './outboundCopy';
 import type { TenantFacing } from './tenantFacing';
+import { applyTemplate, type TemplateVars } from './templateRender';
 
 export const MAIL_TEMPLATE_KEYS = ['ack', 'magic_link', 'public_reply', 'csat'] as const;
 export type MailTemplateKey = (typeof MAIL_TEMPLATE_KEYS)[number];
+export type { TemplateVars };
+export { applyTemplate } from './templateRender';
 
 export interface MailTemplateFields {
   subject: string;
   body: string;
-}
-
-export interface TemplateVars {
-  brand: string;
-  ticketId?: number;
-  subject?: string;
-  link?: string;
-}
-
-const PLACEHOLDER = /\{(brand|ticketId|inc|subject|link|token|goodUrl|neutralUrl|badUrl)\}/g;
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function inc(ticketId: number): string {
-  return `INC-${ticketId.toString().padStart(4, '0')}`;
-}
-
-export function applyTemplate(
-  template: string,
-  vars: TemplateVars,
-  asHtml: boolean
-): string {
-  const ticketId = vars.ticketId ?? 0;
-  const values: Record<string, string> = {
-    brand: vars.brand,
-    ticketId: ticketId ? String(ticketId) : '',
-    inc: ticketId ? inc(ticketId) : '',
-    subject: vars.subject ?? '',
-    link: vars.link ?? '',
-    token: ticketId ? `[#TK-${ticketId}]` : '',
-    goodUrl: vars.link ? `${vars.link}?score=GOOD` : '',
-    neutralUrl: vars.link ? `${vars.link}?score=NEUTRAL` : '',
-    badUrl: vars.link ? `${vars.link}?score=BAD` : '',
-  };
-
-  return template.replace(PLACEHOLDER, (_, key: string) => {
-    const raw = values[key] ?? '';
-    if (asHtml && (key === 'brand' || key === 'subject')) return escapeHtml(raw);
-    return raw;
-  });
 }
 
 export function defaultMailTemplate(key: MailTemplateKey, facing: TenantFacing): MailTemplateFields {
